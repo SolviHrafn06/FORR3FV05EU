@@ -1,0 +1,59 @@
+/* =============================================================
+   style.css – Uppsetning fyrir síma og spjaldtölvur
+   ============================================================= */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;              /* engin skrunstika */
+  background: #bfe6ff;
+  /* Kemur í veg fyrir að síðan "skoppi" eða endurhlaðist þegar dregið er niður */
+  overscroll-behavior: none;
+}
+
+body {
+  /* Fyllir allan skjáinn, líka á símum þar sem vafrastikan birtist og hverfur */
+  height: 100dvh;
+  position: fixed;
+  inset: 0;
+  /* Svæði undir "notch" og heimastiku á iPhone */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+  box-sizing: border-box;
+}
+
+#game {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* MIKILVÆGT fyrir Pointer Events á snertiskjá:
+     vafrinn má ekki nota fingurhreyfingar til að skruna eða þysja,
+     annars fáum við pointercancel í miðjum drætti. */
+  touch-action: none;
+  /* Ekki velja texta / myndir og ekki sýna valmynd við langt þrýsting (iOS) */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Púslbitar og hnappar sýna að hægt sé að snerta þá (fyrir mús) */
+.piece-body, #lock, #next { cursor: grab; }
+.piece.placed .piece-body { cursor: default; }
+
+/* Skuggar og skraut taka ekki við snertingu – aðeins sjálfur bitinn */
+.piece-shadow, .piece-detail, #holes { pointer-events: none; }
+
+/* Örin er ekki snertanleg fyrr en hún birtist */
+#next { pointer-events: none; }
+#next.active { pointer-events: auto; }
+
+/* Fyrir þá sem vilja minni hreyfingu – samt þurfa hreyfingar að sjást */
+@media (prefers-reduced-motion: reduce) {
+  #board-grain { display: none; }
+}
+
+/* Augun blikka um sína eigin miðju (anime.js scaleY) */
+#sun-eyes { transform-box: fill-box; transform-origin: center; }

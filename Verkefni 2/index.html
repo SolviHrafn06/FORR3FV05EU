@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+  <meta charset="UTF-8">
+  <!-- Kemur í veg fyrir aðdrátt (zoom) og lætur leikinn fylla allan skjáinn, líka undir "notch" -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#bfe6ff">
+  <!-- Leyfir að setja leikinn á heimaskjá á iOS og opna hann í fullum skjá -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Trépúsl">
+  <title>Trépúsl</title>
+  <meta name="description" content="Einfalt trépúsl fyrir 2–3 ára börn. Gert með SVG, anime.js og Pointer Events.">
+  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/icon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!--
+    Allur leikurinn er eitt SVG. viewBox er reiknað upp á nýtt í JS (main.js → layout())
+    þannig að það passi bæði fyrir síma og spjaldtölvur, á hlið og upprétt.
+    Lögin (layers) eru í þeirri röð sem þau eru teiknuð: neðst fyrst.
+  -->
+  <svg id="game" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000"
+       preserveAspectRatio="xMidYMid meet" role="img" aria-label="Trépúsl">
+
+    <defs>
+      <linearGradient id="g-sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#9fd8ff"/>
+        <stop offset="1" stop-color="#e6f7ff"/>
+      </linearGradient>
+      <linearGradient id="g-grass" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#9ad46f"/>
+        <stop offset="1" stop-color="#63b046"/>
+      </linearGradient>
+      <!-- Ljós ofan á viðarborðinu – gefur dýpt -->
+      <linearGradient id="g-board-light" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff" stop-opacity=".28"/>
+        <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
+        <stop offset="1" stop-color="#000" stop-opacity=".12"/>
+      </linearGradient>
+      <!-- Mótin (götin) eru dekkri að ofan, eins og skuggi falli ofan í þau -->
+      <linearGradient id="g-hole" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3f230f"/>
+        <stop offset="1" stop-color="#7a4e2a"/>
+      </linearGradient>
+      <clipPath id="clip-board"><rect id="board-clip-rect" rx="40"/></clipPath>
+    </defs>
+
+    <!-- ===== 1. Bakgrunnur: himinn, gras, ský og sól ===== -->
+    <g id="layer-bg">
+      <rect id="sky" fill="url(#g-sky)"/>
+      <path id="hills" fill="url(#g-grass)"/>
+      <path id="hills-front" fill="#7cc35a"/>
+
+      <!-- Skýið breytist í hjarta (morphing) þegar borð er klárað -->
+      <g id="cloud" transform="translate(800 70)">
+        <g id="cloud-inner">
+          <path id="cloud-shape" fill="#ffffff"
+                d="M-58 26 C-84 26 -86 -6 -62 -12 C-62 -40 -30 -48 -14 -32 C-6 -58 34 -58 38 -28 C62 -36 82 -12 66 8 C84 20 70 32 56 26 Z"/>
+        </g>
+      </g>
+
+      <!-- Sólin. Munnurinn breytist (morphing) eftir því hvort barnið gerir rétt eða rangt -->
+      <g id="sun" transform="translate(1500 80)">
+        <g id="sun-inner">
+          <g id="sun-rays" fill="#ffc300"></g>
+          <circle r="54" fill="#ffd60a" stroke="#ffb703" stroke-width="5"/>
+          <circle cx="-30" cy="10" r="9" fill="#ff8fab" opacity=".55"/>
+          <circle cx="30" cy="10" r="9" fill="#ff8fab" opacity=".55"/>
+          <g id="sun-eyes" fill="#3b2f2f">
+            <ellipse cx="-17" cy="-10" rx="6" ry="8"/>
+            <ellipse cx="17" cy="-10" rx="6" ry="8"/>
+          </g>
+          <path id="sun-mouth" fill="#3b2f2f" d="M-24 8 Q0 36 24 8 Q0 20 -24 8 Z"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Form sem morphTo() notar sem markmið. Þau eru ósýnileg en þurfa að vera í DOM -->
+    <g id="morph-targets" visibility="hidden" aria-hidden="true">
+      <path id="mouth-smile" d="M-24 8 Q0 36 24 8 Q0 20 -24 8 Z"/>
+      <path id="mouth-o"     d="M-10 18 Q-10 6 0 6 Q10 6 10 18 Q10 32 0 32 Q-10 32 -10 18 Z"/>
+      <path id="mouth-grin"  d="M-30 4 Q0 52 30 4 Q0 12 -30 4 Z"/>
+      <path id="cloud-normal"
+            d="M-58 26 C-84 26 -86 -6 -62 -12 C-62 -40 -30 -48 -14 -32 C-6 -58 34 -58 38 -28 C62 -36 82 -12 66 8 C84 20 70 32 56 26 Z"/>
+      <path id="cloud-heart"
+            d="M0 52 C-24 36 -66 10 -66 -18 C-66 -44 -40 -58 -20 -54 C-10 -52 -4 -44 0 -36 C4 -44 10 -52 20 -54 C40 -58 66 -44 66 -18 C66 10 24 36 0 52 Z"/>
+    </g>
+
+    <!-- ===== 2. Viðarborðið með mótunum ===== -->
+    <g id="layer-board">
+      <rect id="board-shadow" rx="40" fill="#000" opacity=".18"/>
+      <rect id="board" rx="40" fill="#c98b4f"/>
+      <g id="board-grain" clip-path="url(#clip-board)" fill="none" stroke="#8a5a2b" stroke-opacity=".18" stroke-width="4" stroke-linecap="round"></g>
+      <rect id="board-light" rx="40" fill="url(#g-board-light)"/>
+      <rect id="board-edge" rx="40" fill="none" stroke="#7a4a20" stroke-opacity=".5" stroke-width="6"/>
+      <g id="holes"></g>
+    </g>
+
+    <!-- ===== 3. Púslbitarnir (búnir til í JS) ===== -->
+    <g id="layer-pieces"></g>
+
+    <!-- ===== 4. Áhrif: hringir undir fingrum, stjörnur o.fl. ===== -->
+    <g id="layer-fx" pointer-events="none"></g>
+
+    <!-- Ferlar fyrir "Follow motion path" (d er reiknað í JS) -->
+    <path id="bee-path" fill="none" stroke="none"/>
+    <path id="hint-path" fill="none" stroke="none"/>
+
+    <!-- Býflugan sem flýgur eftir ferli þegar borð er klárað. Snýr til hægri (+x). -->
+    <g id="bee" opacity="0" pointer-events="none">
+      <ellipse class="wing" cx="-6" cy="-22" rx="16" ry="22" fill="#d7f1ff" stroke="#8ecae6" stroke-width="3" opacity=".9"/>
+      <ellipse class="wing" cx="10" cy="-20" rx="13" ry="18" fill="#d7f1ff" stroke="#8ecae6" stroke-width="3" opacity=".9"/>
+      <ellipse rx="34" ry="24" fill="#ffd60a" stroke="#3b2f2f" stroke-width="4"/>
+      <path d="M-12 -22 Q-18 0 -12 22 M4 -24 Q-2 0 4 24" stroke="#3b2f2f" stroke-width="8" fill="none"/>
+      <path d="M-34 0 L-46 -6 L-46 6 Z" fill="#3b2f2f"/>
+      <circle cx="24" cy="-6" r="5" fill="#3b2f2f"/>
+      <path d="M18 8 Q24 14 30 8" stroke="#3b2f2f" stroke-width="3" fill="none"/>
+    </g>
+
+    <!-- Örin sem birtist þegar borð er klárað: strjúka til að fara á næsta borð -->
+    <g id="next" transform="translate(800 500)">
+      <g id="next-inner" opacity="0">
+        <circle r="86" fill="#43aa8b" stroke="#fff" stroke-width="10"/>
+        <path d="M-40 -14 H8 V-46 L52 0 L8 46 V14 H-40 Z" fill="#fff" stroke="#fff" stroke-width="8" stroke-linejoin="round"/>
+      </g>
+    </g>
+
+    <!-- ===== 5. Vísbendingar (í stað texta) ===== -->
+    <!-- Höndin. Fingurgómurinn er í (0,0) -->
+    <g id="hand" opacity="0" pointer-events="none">
+      <g id="hand-inner">
+        <circle id="hand-press" r="30" fill="#fff" opacity="0"/>
+        <path d="M-12 4 Q-12 -6 0 -6 Q12 -6 12 4 V52 H-12 Z" fill="#ffd9b8" stroke="#b9805a" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M-34 60 Q-36 44 -22 42 L34 42 Q48 44 46 60 L44 100 Q40 124 14 124 L-12 124 Q-36 120 -36 98 Z" fill="#ffd9b8" stroke="#b9805a" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M12 42 V60 M30 42 V60" stroke="#b9805a" stroke-width="3" fill="none"/>
+        <path d="M-34 70 Q-56 56 -60 70 Q-58 84 -34 92" fill="#ffd9b8" stroke="#b9805a" stroke-width="4" stroke-linejoin="round"/>
+      </g>
+    </g>
+
+    <!-- Vísbending um snúning: tveir fingur og bogadregin ör sem teiknast upp -->
+    <g id="rot-hint" opacity="0" pointer-events="none">
+      <path id="rot-arrow" d="M0 -110 A110 110 0 0 1 95 55" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round"/>
+      <path id="rot-arrow-head" d="M0 -22 L30 0 L0 22 Z" fill="#fff"/>
+      <circle class="finger" r="24" fill="#ffd9b8" stroke="#b9805a" stroke-width="4"/>
+      <circle class="finger" r="24" fill="#ffd9b8" stroke="#b9805a" stroke-width="4"/>
+    </g>
+
+    <!-- ===== 6. Lás fyrir foreldra: halda inni í 2 sek til að byrja borðið upp á nýtt ===== -->
+    <g id="lock" transform="translate(80 80)">
+      <circle r="62" fill="transparent"/>
+      <circle r="46" fill="#ffffff" opacity=".55"/>
+      <circle id="lock-ring" r="54" fill="none" stroke="#ff7b00" stroke-width="10" stroke-linecap="round" transform="rotate(-90)"/>
+      <g id="lock-icon">
+        <path id="lock-shackle" d="M-14 -4 V-16 A14 14 0 0 1 14 -16 V-4" fill="none" stroke="#6c584c" stroke-width="7" stroke-linecap="round"/>
+        <rect x="-22" y="-6" width="44" height="34" rx="8" fill="#6c584c"/>
+        <circle cy="8" r="5" fill="#f2e9e4"/>
+        <rect x="-2" y="10" width="4" height="9" fill="#f2e9e4"/>
+      </g>
+    </g>
+  </svg>
+
+  <noscript>Þessi leikur þarf JavaScript.</noscript>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
