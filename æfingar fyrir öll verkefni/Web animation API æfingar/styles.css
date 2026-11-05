@@ -1,0 +1,159 @@
+body {
+    margin: 0;
+    padding: 24px;
+    background-color: #f7f5fb;
+    color: #29253a;
+    font-family: Arial, sans-serif;
+}
+
+.page {
+    max-width: 760px;
+    margin: 40px auto;
+}
+
+.page-header {
+    position: relative;
+    padding: 0 52px;
+    text-align: center;
+}
+
+.heading {
+    margin-bottom: 12px;
+    animation: rainbow-text 7s linear infinite;
+    font-size: 32px;
+    text-align: center;
+}
+
+.texti {
+    margin: 0 0 32px;
+    animation: rainbow-text 6s linear infinite reverse;
+    font-size: 20px;
+    font-weight: normal;
+    text-align: center;
+}
+
+@keyframes rainbow-text {
+    0% { color: red; }
+    14% { color: orange; }
+    28% { color: #d5b900; }
+    42% { color: green; }
+    57% { color: blue; }
+    71% { color: indigo; }
+    85% { color: violet; }
+    100% { color: red; }
+}
+
+.menu-toggle {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 42px;
+    height: 42px;
+    padding: 9px;
+    border: 1px solid #e4deee;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.menu-toggle:hover {
+    background: #f0ebf7;
+}
+
+.menu-toggle:focus-visible {
+    outline: 3px solid #b5a7d1;
+    outline-offset: 2px;
+}
+
+.menu-toggle span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    border-radius: 2px;
+    background: #514371;
+}
+
+.exercise-list {
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+}
+
+.exercise-list li {
+    margin: 10px 0;
+}
+
+.exercise-list a {
+    display: block;
+    padding: 13px 16px;
+    border: 1px solid #e4deee;
+    border-radius: 6px;
+    background-color: #fff;
+    color: #514371;
+    font-size: 17px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.exercise-list a:hover {
+    border-color: #a99ac7;
+    background-color: #f0ebf7;
+    color: #382c55;
+}
+
+.exercise-list a:focus-visible {
+    outline: 3px solid #b5a7d1;
+    outline-offset: 2px;
+}
+
+.takkinn-minn {
+    opacity: 0.5;
+    transition: opacity 300ms linear, background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.takkinn-minn:hover {
+    opacity: 1;
+}
+
+@keyframes fade-in-keyframes {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fade-in-keyframes 2s linear both;
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 16px;
+    }
+
+    .page {
+        margin-top: 24px;
+    }
+
+    .heading {
+        font-size: 27px;
+    }
+
+    .page-header {
+        padding: 0 4px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+    }
+}

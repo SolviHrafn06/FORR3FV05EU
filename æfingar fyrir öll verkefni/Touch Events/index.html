@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="is">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Snertistjórnun · Tilraunastofa</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">FORR3FV05EU / POINTER EVENTS</p>
+      <h1>Prófaðu með fingrunum<span>.</span></h1>
+      <p>Lítil tilraunastofa fyrir mús, snertiskjá og penna. Fylgstu með því hvað gerist í kóðanum.</p>
+      <p id="support" class="badge"></p>
+    </header>
+
+    <section class="panel">
+      <div class="heading"><h2>01 · Teiknaðu</h2><button id="clear">Hreinsa teikningu</button></div>
+      <p>Dragðu yfir flötinn. Prófaðu marga fingur samtímis; hver snerting fær sinn lit. Þrýstingur penna breytir línuþykkt.</p>
+      <canvas id="drawing" aria-label="Teikniflötur fyrir mús, fingur eða penna">Vafrinn þarf að styðja canvas.</canvas>
+      <p class="caption"><code>pointerdown → pointermove → pointerup</code> · <code>Map</code> geymir virkar snertingar.</p>
+    </section>
+
+    <section class="panel">
+      <div class="heading"><h2>02 · Hreyfðu og snertu</h2><button id="reset">Endurstilla</button></div>
+      <p>Ýttu stutt, tvíýttu eða haltu í 600 ms. Dragðu með einum fingri eða strjúktu hratt (swipe). Með tveimur fingrum geturðu stækkað, minnkað og snúið.</p>
+      <div id="playground" aria-label="Tilraunaflötur fyrir snertihreyfingar">
+        <div id="tile"><span>✳</span><strong>Snertu hér</strong></div>
+        <span class="surface-label">ALLUR FLÖTURINN ER VIRKUR</span>
+      </div>
+      <div class="feedback"><output id="gesture" aria-live="polite">Bíð eftir fyrstu snertingu…</output><span id="transform">100% · 0°</span></div>
+      <div class="controls">
+        <button id="smaller" aria-label="Minnka">−</button><button id="larger" aria-label="Stækka">+</button><button id="rotate">Snúa 15°</button>
+        <span>Þessir takkar leyfa þér líka að prófa breytingarnar með mús eða lyklaborði.</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>03 · Hvað sér JavaScript?</h2>
+      <p>Hreyfðu bendilinn yfir annan hvorn flötinn. Skrunaðu síðunni til að sjá muninn á <code>clientY</code> og <code>pageY</code>.</p>
+      <dl class="stats">
+        <div><dt>Tæki / pointerId</dt><dd id="device">—</dd></div>
+        <div><dt>Virkar snertingar</dt><dd id="count">0</dd></div>
+        <div><dt>clientX / clientY</dt><dd id="client">—</dd></div>
+        <div><dt>pageX / pageY</dt><dd id="page">—</dd></div>
+        <div><dt>offsetX / offsetY</dt><dd id="offset">—</dd></div>
+        <div><dt>screenX / screenY</dt><dd id="screen">—</dd></div>
+        <div><dt>Hnit innan flatar</dt><dd id="local">—</dd></div>
+        <div><dt>pressure / isPrimary</dt><dd id="pressure">—</dd></div>
+      </dl>
+      <p class="caption">client: vafragluggi · page: skjal · offset: stakið sem fékk viðburðinn · screen: skjár. Hnit innan flatar eru reiknuð með <code>getBoundingClientRect()</code>.</p>
+      <div class="heading"><h3>Viðburðaskrá</h3><button id="clear-log">Hreinsa skrá</button></div>
+      <ol id="log" aria-label="Síðustu viðburðir"></ol>
+      <p class="caption">Skráin sýnir síðustu 12 viðburði. <code>pointermove</code> birtist í hnitunum til að skráin fyllist ekki.</p>
+    </section>
+
+    <details class="panel">
+      <summary>Hvernig prófa ég þetta?</summary>
+      <ol class="instructions">
+        <li><b>Í tölvu:</b> Opnaðu index.html í vafra. Notaðu mús til að teikna, draga, tvísmella og halda inni.</li>
+        <li><b>Hermdur snertiskjár:</b> Opnaðu Developer Tools (F12), kveiktu á device toolbar og veldu síma. Prófaðu eins fingurs hreyfingar.</li>
+        <li><b>Í síma:</b> Opnaðu möppuna í VS Code, ræstu Live Server á porti 5500 og notaðu VS Code Port Forwarding. Opnaðu áframsenda slóð í símanum og skráðu þig inn ef beðið er um það.</li>
+        <li><b>Multitouch:</b> Prófaðu tveggja fingra stækkun og snúning á raunverulegum snertiskjá. Mús ein og sér sendir ekki tvær samtímis snertingar.</li>
+      </ol>
+      <p>Í script.js eru skýringar við <code>Map</code>, <code>setPointerCapture()</code>, hnit og hreyfingar. CSS-reglan <code>touch-action: none</code> á prófunarflötunum leyfir demóinu að sjá um snertihreyfingar. Þú getur skrunað síðunni utan þeirra.</p>
+    </details>
+    <footer>Byggt á <a href="https://github.com/GunnarThorunnarson/FORR3FV05EU/wiki/Snertistjornun">Snertistjórnun</a> · HTML + CSS + JavaScript · Engin söfn eða uppsetning.</footer>
+  </main>
+</body>
+</html>

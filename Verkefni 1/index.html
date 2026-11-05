@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Nemendasamband Tækniskólans</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 30px 20px;
+            background-color: #f5f2e9;
+            color: #272820;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        header { font-size: 14px; font-weight: bold; }
+        main { max-width: 650px; margin: 30px auto; }
+        h1 { margin: 10px 0; font-size: 32px; }
+        p { line-height: 1.6; }
+        footer { margin-top: 40px; color: #646658; font-size: 13px; }
+
+        .hnappur {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 15px 25px;
+            border: 2px solid #272820;
+            border-radius: 6px;
+            background-color: #272820;
+            color: white;
+            text-decoration: none;
+            transition: background-color 0.3s, color 0.3s, transform 0.3s;
+        }
+
+        .hnappur:hover {
+            background-color: #dce982;
+            color: #272820;
+            transform: translateY(-4px);
+        }
+
+        a:focus-visible {
+            outline: 3px solid #ed7045;
+            outline-offset: 5px;
+        }
+
+       
+        svg { display: block; width: 100%; height: auto; }
+
+        .tolur {
+            font-size: 180px;
+            font-weight: bold;
+            fill: #ed7045;
+            stroke: #272820;
+            stroke-width: 2px;
+        }
+
+        
+        .lina {
+            fill: none;
+            stroke: #ed7045;
+            stroke-width: 4px;
+            stroke-linecap: round;
+            stroke-dasharray: 100;
+            stroke-dashoffset: 0;
+            animation: teikna 2s ease-in-out;
+        }
+
+        @keyframes teikna {
+            from { stroke-dashoffset: 100; }
+            to   { stroke-dashoffset: 0; }
+        }
+
+        
+        .svif { animation: svifa 3s ease-in-out 2s; }
+
+        @keyframes svifa {
+            0%   { transform: translateY(0); }
+            50%  { transform: translateY(-18px); }
+            100% { transform: translateY(0); }
+        }
+
+
+        .merki {
+            transform-origin: 300px 285px;
+            transition: transform 0.4s ease-in-out;
+        }
+
+        svg:hover .merki { transform: rotate(10deg); }
+
+
+        @media (prefers-reduced-motion: reduce) {
+            .lina, .svif { animation: none; }
+            .merki, .hnappur {
+                transition: none;
+                transform: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>Nemendasamband Tækniskólans</header>
+    <main>
+        
+        <svg viewBox="0 0 600 400" role="img" aria-labelledby="titill lysing">
+            <title id="titill">404 og merki nemendasambandsins</title>
+            <desc id="lysing">Appelsínugult 404 og merki NST í hring.</desc>
+
+            
+            <rect x="10" y="10" width="580" height="380" rx="25" fill="#eeeadd" />
+
+            
+            <text class="tolur" x="300" y="185" text-anchor="middle">404</text>
+
+            <!-- M byrjar í (70,300). Q sveigir um (300,210)
+                 og endar í (530,300). -->
+            <path class="lina" pathLength="100" d="M 70 300 Q 300 210 530 300" />
+
+            <!-- g = hópur. Öll formin í hópnum hreyfast saman.
+                 Ytri hópurinn svífur, sá innri snýst við hover. -->
+            <g class="svif">
+                <g class="merki">
+                    <circle cx="300" cy="285" r="78" fill="#dce982" stroke="#272820" stroke-width="4" />
+                    <circle cx="300" cy="285" r="58" fill="none" stroke="#272820" stroke-width="2" />
+
+                    <!-- N í NST merkinu M = færa penna, L = bein lína, Q = sveigja-->
+                    <path d="M 278 324 L 278 247 Q 270 237 263 250
+                             M 278 247 L 322 324 L 322 247
+                             M 264 290 Q 278 277 291 290
+                             M 263 326 Q 279 310 296 326"
+                          fill="none" stroke="#272820" stroke-width="7"
+                          stroke-linecap="round" stroke-linejoin="round" />
+
+                    <text x="300" y="198" text-anchor="middle" font-size="11">NEMENDASAMBAND</text>
+                    <text x="300" y="381" text-anchor="middle" font-size="10">TÆKNISKÓLANS · 1939</text>
+                </g>
+            </g>
+        </svg>
+
+        <h1>Úps! Þessi síða skrópaði.</h1>
+        <p>Síðan sem þú leitar að fannst ekki.<br>
+           Förum aftur á forsíðuna og finnum réttu leiðina.</p>
+        <a class="hnappur" href="https://nst.is/">Aftur á forsíðu</a>
+    </main>
+    <footer>Öll villumst við stundum.</footer>
+</body>
+
+</html>
