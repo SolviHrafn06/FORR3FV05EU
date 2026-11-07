@@ -1,87 +1,204 @@
-html, body {
-  margin: 0;
-  height: 100%;
-  overflow: hidden;
-  background: #6fbf4c;
-  overscroll-behavior: none;
-}
+<!DOCTYPE html>
+<html lang="is">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Trépúsl</title>
+  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
 
-#leikur {
-  display: block;
-  width: 100vw;
-  height: 100dvh;
-  /* annars skrunar/þysjar vafrinn og sendir pointercancel í miðjum drætti */
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
-}
+<!-- viewBox er breytt í main.js eftir því hvort skjárinn er uppréttur eða á hlið -->
+<svg id="leikur" viewBox="0 0 700 1000" preserveAspectRatio="xMidYMid meet">
 
-/* bakgrunnur */
-.haed-aftur { fill: #9bd672; }
-.haed-fram { fill: #6fbf4c; }
-#sky-form { fill: #fff; }
-.sol-hringur { fill: #ffd60a; stroke: #ffb703; stroke-width: 5; }
-#geislar { fill: #ffc300; }
-#augu { transform-box: fill-box; transform-origin: center; }
+  <defs>
+    <linearGradient id="himinn" gradientUnits="userSpaceOnUse" x1="0" y1="-300" x2="0" y2="260">
+      <stop offset="0" stop-color="#7cc8ff"/>
+      <stop offset="1" stop-color="#e3f6ff"/>
+    </linearGradient>
+    <linearGradient id="glans" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".4"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".12"/>
+    </linearGradient>
+    <linearGradient id="gat-litur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f230f"/>
+      <stop offset="1" stop-color="#7a4e2a"/>
+    </linearGradient>
 
-#sol { transform: translate(590px, 90px); }
-#sky { transform: translate(330px, 80px); }
+    <clipPath id="bord-klipp"><rect x="40" y="170" width="620" height="480" rx="36"/></clipPath>
 
-@media (orientation: landscape) {
-  #sol { transform: translate(1140px, 90px); }
-  #sky { transform: translate(800px, 75px); }
-}
+    <!-- formin eru teiknuð í kringum 0,0 svo bitarnir snúist um miðjuna -->
+    <circle id="form-hringur" r="62"/>
+    <rect id="form-ferningur" x="-58" y="-58" width="116" height="116" rx="14"/>
+    <path id="form-thrihyrningur" d="M0 -64 Q6 -64 9 -58 L68 46 Q72 56 60 56 L-60 56 Q-72 56 -68 46 L-9 -58 Q-6 -64 0 -64 Z"/>
+    <path id="form-hjarta" d="M0 58 C-22 43 -66 15 -66 -17 C-66 -43 -44 -58 -22 -56 C-11 -55 -3 -47 0 -39 C3 -47 11 -55 22 -56 C44 -58 66 -43 66 -17 C66 15 22 43 0 58 Z"/>
 
-/* borð og mót */
-.bord { fill: #c98b4f; }
-.bord-skuggi { fill: #000; opacity: .18; }
-.bord-ljos { fill: url(#glans); stroke: #7a4a20; stroke-opacity: .5; stroke-width: 6; }
-.aedar path { fill: none; stroke: #8a5a2b; stroke-opacity: .2; stroke-width: 4; stroke-linecap: round; }
+    <g id="andlit">
+      <circle cx="-19" cy="-6" r="8" fill="#fff"/>
+      <circle cx="19"  cy="-6" r="8" fill="#fff"/>
+      <circle cx="-17" cy="-5" r="4.5" fill="#3b2f2f"/>
+      <circle cx="21"  cy="-5" r="4.5" fill="#3b2f2f"/>
+      <circle cx="-15" cy="-7.5" r="1.6" fill="#fff"/>
+      <circle cx="23"  cy="-7.5" r="1.6" fill="#fff"/>
+      <circle cx="-30" cy="10" r="7" fill="#fff" opacity=".3"/>
+      <circle cx="30"  cy="10" r="7" fill="#fff" opacity=".3"/>
+      <path d="M-14 12 Q0 26 14 12" fill="none" stroke="#3b2f2f" stroke-width="5" stroke-linecap="round"/>
+    </g>
 
-.gat { fill: url(#gat-litur); }
-.utlina {
-  fill: none;
-  stroke: #f7dcb4;
-  stroke-width: 14;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
+    <path id="geisli" d="M-10 -66 L0 -92 L10 -66 Z"/>
 
-/* bitar */
-.bit {
-  cursor: grab;
-  filter: drop-shadow(5px 8px 0 rgba(43, 26, 14, .3));
-}
-.bit.lyftur { filter: drop-shadow(14px 24px 4px rgba(43, 26, 14, .3)); }
-.bit.kominn { filter: none; cursor: default; }
+    <polygon id="stjarna" points="0,-20 5.3,-7.3 19,-6.2 8.6,2.8 11.8,16.2 0,9 -11.8,16.2 -8.6,2.8 -19,-6.2 -5.3,-7.3"/>
+  </defs>
 
-.snertiflotur { fill: transparent; }
+  <!-- bakgrunnur, hafður stærri en viewBox svo það séu ekki tómar rendur á hliðunum -->
+  <rect x="-2000" y="-2000" width="5500" height="2200" fill="url(#himinn)"/>
+  <path class="haed-aftur" d="M-1000 230 Q-300 100 300 190 T1500 150 T2500 180 V3000 H-1000 Z"/>
+  <path class="haed-fram" d="M-1000 300 Q-200 220 450 280 T1800 260 T2800 280 V3000 H-1000 Z"/>
 
-.hringur, .ferningur, .thrihyrningur, .hjarta {
-  stroke-width: 7;
-  stroke-linejoin: round;
-}
-.hringur { fill: #e63946; stroke: #a4161a; }
-.ferningur { fill: #3a86ff; stroke: #1f5fcc; }
-.thrihyrningur { fill: #ffbe0b; stroke: #c98f00; }
-.hjarta { fill: #ff70a6; stroke: #c94f7f; }
-.glans { fill: url(#glans); }
+  <g id="sky">
+    <path id="sky-form" d="M-58 26 C-84 26 -86 -6 -62 -12 C-62 -40 -30 -48 -14 -32 C-6 -58 34 -58 38 -28 C62 -36 82 -12 66 8 C84 20 70 32 56 26 Z"/>
+  </g>
 
-#ahrif, #byfluga, #or, use { pointer-events: none; }
-#byfluga, #or { opacity: 0; }
-.vaengur { fill: #e0f4ff; stroke: #8ecae6; stroke-width: 3; opacity: .9; }
+  <g id="sol">
+    <!-- teiknast upp á 2 sek þegar haldið er á sólinni (byrja upp á nýtt) -->
+    <circle id="tima-hringur" class="fingurhringur" r="100"/>
+    <g id="sol-innri">
+      <g id="geislar">
+        <use href="#geisli"/>
+        <use href="#geisli" transform="rotate(30)"/>
+        <use href="#geisli" transform="rotate(60)"/>
+        <use href="#geisli" transform="rotate(90)"/>
+        <use href="#geisli" transform="rotate(120)"/>
+        <use href="#geisli" transform="rotate(150)"/>
+        <use href="#geisli" transform="rotate(180)"/>
+        <use href="#geisli" transform="rotate(210)"/>
+        <use href="#geisli" transform="rotate(240)"/>
+        <use href="#geisli" transform="rotate(270)"/>
+        <use href="#geisli" transform="rotate(300)"/>
+        <use href="#geisli" transform="rotate(330)"/>
+      </g>
+      <circle class="sol-hringur" r="56"/>
+      <circle cx="-32" cy="12" r="10" fill="#ff8fab" opacity=".6"/>
+      <circle cx="32"  cy="12" r="10" fill="#ff8fab" opacity=".6"/>
+      <g id="augu">
+        <ellipse cx="-18" cy="-10" rx="6.5" ry="9" fill="#3b2f2f"/>
+        <ellipse cx="18"  cy="-10" rx="6.5" ry="9" fill="#3b2f2f"/>
+      </g>
+      <path id="munnur" fill="#3b2f2f" d="M-24 10 Q0 38 24 10 Q0 22 -24 10 Z"/>
+    </g>
+  </g>
 
-.fingurhringur {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 12;
-  stroke-linecap: round;
-}
-.slepphringur {
-  fill: none;
-  stroke: #ffe066;
-  stroke-width: 8;
-}
-.stjarna { fill: #ffd60a; stroke: #fff; stroke-width: 2; }
+  <!-- form fyrir morphTo -->
+  <g visibility="hidden">
+    <path id="bros" d="M-24 10 Q0 38 24 10 Q0 22 -24 10 Z"/>
+    <path id="hissa" d="M-10 20 Q-10 8 0 8 Q10 8 10 20 Q10 34 0 34 Q-10 34 -10 20 Z"/>
+    <path id="storbros" d="M-30 6 Q0 54 30 6 Q0 14 -30 6 Z"/>
+    <path id="sky-venjulegt" d="M-58 26 C-84 26 -86 -6 -62 -12 C-62 -40 -30 -48 -14 -32 C-6 -58 34 -58 38 -28 C62 -36 82 -12 66 8 C84 20 70 32 56 26 Z"/>
+    <path id="sky-hjarta" d="M0 52 C-24 36 -66 10 -66 -18 C-66 -44 -40 -58 -20 -54 C-10 -52 -4 -44 0 -36 C4 -44 10 -52 20 -54 C40 -58 66 -44 66 -18 C66 10 24 36 0 52 Z"/>
+  </g>
+
+  <!-- borðið -->
+  <rect class="bord-skuggi" x="48" y="182" width="620" height="480" rx="36"/>
+  <rect class="bord" x="40" y="170" width="620" height="480" rx="36"/>
+  <g class="aedar" clip-path="url(#bord-klipp)">
+    <path d="M20 195 q78 -10 155 0 t155 0 t155 0 t155 0 t155 0"/>
+    <path d="M20 247 q78 -15 155 0 t155 0 t155 0 t155 0 t155 0"/>
+    <path d="M20 299 q78 -20 155 0 t155 0 t155 0 t155 0 t155 0"/>
+    <path d="M20 351 q78 -10 155 0 t155 0 t155 0 t155 0 t155 0"/>
+    <path d="M20 403 q78 -15 155 0 t155 0 t155 0 t155 0 t155 0"/>
+    <path d="M20 455 q78 -20 155 0 t155 0 t155 0 t155 0 t155 0"/>
+    <path d="M20 507 q78 -10 155 0 t155 0 t155 0 t155 0 t155 0"/>
+    <path d="M20 559 q78 -15 155 0 t155 0 t155 0 t155 0 t155 0"/>
+    <path d="M20 611 q78 -20 155 0 t155 0 t155 0 t155 0 t155 0"/>
+  </g>
+  <rect class="bord-ljos" x="40" y="170" width="620" height="480" rx="36"/>
+
+  <!-- mótin. útlínan er ekki <use> því createDrawable virkar ekki á það -->
+  <g class="mot" id="mot-hringur" data-x="200" data-y="290">
+    <circle class="utlina" r="62"/>
+    <use class="gat" href="#form-hringur"/>
+  </g>
+  <g class="mot" id="mot-ferningur" data-x="500" data-y="290">
+    <rect class="utlina" x="-58" y="-58" width="116" height="116" rx="14"/>
+    <use class="gat" href="#form-ferningur"/>
+  </g>
+  <g class="mot" id="mot-thrihyrningur" data-x="200" data-y="525">
+    <path class="utlina" d="M0 -64 Q6 -64 9 -58 L68 46 Q72 56 60 56 L-60 56 Q-72 56 -68 46 L-9 -58 Q-6 -64 0 -64 Z"/>
+    <use class="gat" href="#form-thrihyrningur"/>
+  </g>
+  <g class="mot" id="mot-hjarta" data-x="500" data-y="525">
+    <path class="utlina" d="M0 58 C-22 43 -66 15 -66 -17 C-66 -43 -44 -58 -22 -56 C-11 -55 -3 -47 0 -39 C3 -47 11 -55 22 -56 C44 -58 66 -43 66 -17 C66 15 22 43 0 58 Z"/>
+    <use class="gat" href="#form-hjarta"/>
+  </g>
+
+  <!-- bitarnir. x/y er staðsetning þegar skjárinn er uppréttur, lx/ly þegar hann er á hlið -->
+  <g id="bitar">
+    <g class="bit snyst" data-mot="mot-hjarta" data-snuningur="270"
+       data-x="200" data-y="770" data-lx="830" data-ly="290">
+      <circle class="snertiflotur" r="82"/>
+      <use class="hjarta" href="#form-hjarta"/>
+      <use class="glans" href="#form-hjarta"/>
+      <use href="#andlit" transform="translate(0 -4) scale(0.85)"/>
+    </g>
+    <g class="bit" data-mot="mot-hringur" data-snuningur="0"
+       data-x="500" data-y="770" data-lx="1080" data-ly="290">
+      <circle class="snertiflotur" r="82"/>
+      <use class="hringur" href="#form-hringur"/>
+      <use class="glans" href="#form-hringur"/>
+      <use href="#andlit"/>
+    </g>
+    <g class="bit snyst" data-mot="mot-thrihyrningur" data-snuningur="180"
+       data-x="200" data-y="925" data-lx="830" data-ly="530">
+      <circle class="snertiflotur" r="82"/>
+      <use class="thrihyrningur" href="#form-thrihyrningur"/>
+      <use class="glans" href="#form-thrihyrningur"/>
+      <use href="#andlit" transform="translate(0 18) scale(0.75)"/>
+    </g>
+    <g class="bit" data-mot="mot-ferningur" data-snuningur="0"
+       data-x="500" data-y="925" data-lx="1080" data-ly="530">
+      <circle class="snertiflotur" r="82"/>
+      <use class="ferningur" href="#form-ferningur"/>
+      <use class="glans" href="#form-ferningur"/>
+      <use href="#andlit"/>
+    </g>
+  </g>
+
+  <g id="ahrif"></g>
+
+  <!-- býflugan flýgur eftir #leid þegar allt er komið -->
+  <path id="leid" fill="none" d="M-80 700 C150 250 480 900 380 430 C330 200 650 230 1300 120"/>
+  <g id="byfluga">
+    <ellipse class="vaengur" cx="-6" cy="-22" rx="15" ry="21"/>
+    <ellipse class="vaengur" cx="10" cy="-20" rx="12" ry="17"/>
+    <ellipse rx="32" ry="23" fill="#ffd60a" stroke="#3b2f2f" stroke-width="4"/>
+    <path d="M-10 -21 Q-16 0 -10 21 M6 -23 Q0 0 6 23" stroke="#3b2f2f" stroke-width="8" fill="none"/>
+    <path d="M-32 0 L-44 -6 L-44 6 Z" fill="#3b2f2f"/>
+    <circle cx="22" cy="-6" r="5" fill="#3b2f2f"/>
+    <path d="M16 8 Q22 14 28 8" stroke="#3b2f2f" stroke-width="3" fill="none"/>
+  </g>
+
+  <!-- höndin sem sýnir hvernig á að spila. fingurgómurinn er í 0,0 -->
+  <g id="hond">
+    <use id="draugur" class="hringur" href="#form-hringur"/>
+    <circle id="hond-hringur" class="fingurhringur" r="50"/>
+    <g id="hond-innri">
+      <rect x="-14" y="40" width="64" height="62" rx="20"/>
+      <ellipse cx="-14" cy="70" rx="12" ry="22" transform="rotate(-25 -14 70)"/>
+      <rect x="-11" y="0" width="22" height="66" rx="11"/>
+    </g>
+  </g>
+
+  <g transform="translate(350 410)">
+    <g id="or">
+      <circle r="78" fill="#43aa8b" stroke="#fff" stroke-width="10"/>
+      <path d="M36 -14 H-8 V-44 L-50 0 L-8 44 V14 H36 Z" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
