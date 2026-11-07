@@ -69,8 +69,18 @@ html, body {
 .hjarta { fill: #ff70a6; stroke: #c94f7f; }
 .glans { fill: url(#glans); }
 
-#ahrif, #byfluga, #or, use { pointer-events: none; }
-#byfluga, #or { opacity: 0; }
+#ahrif, #byfluga, #or, #hond, #tima-hringur, use { pointer-events: none; }
+#byfluga, #or, #hond { opacity: 0; }
+
+#hond-innri rect, #hond-innri ellipse { fill: #ffd7b5; stroke: #3b2f2f; stroke-width: 4; }
+#draugur { opacity: 0; }
+
+#tima-hringur {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
 .vaengur { fill: #e0f4ff; stroke: #8ecae6; stroke-width: 3; opacity: .9; }
 
 .fingurhringur {
