@@ -12,7 +12,7 @@ Lestu það með `index.html`, `css/style.css` og `js/main.js` opin hlið við h
    Ef ekkert er snert í 10 sekúndur (og enginn biti er kominn) kemur höndin aftur.
 3. Barnið **heldur fingri á bita** (0,4 sek). Hvítur hringur teiknast utan um fingurinn á meðan.
    Þegar hringurinn er búinn lyftist bitinn og þá má **draga** hann (pan).
-4. Hjartað og þríhyrningurinn eru á hvolfi. Meðan barnið heldur á þeim snertir það skjáinn með **öðrum fingri** og þá snýst bitinn um 90° (multi-touch).
+4. Hjartað og þríhyrningurinn eru á hvolfi. Meðan barnið heldur á þeim með einum fingri setur það **annan fingur** á skjáinn og **snýr honum í hring** utan um bitann, eins og þegar mynd er snúið í síma. Bitinn snýst með fingrunum og smellur í næstu 90° þegar fingri er lyft (multi-touch).
 5. Ef bitanum er sleppt nálægt réttu móti og hann snýr rétt **smellur hann á sinn stað**: stjörnur skjótast út og sólin brosir breitt (morphing).
    Annars vaggar hann, flýgur heim og sólin verður hissa.
 6. Þegar allir bitar eru komnir: skýið **breytist í hjarta** (morphing), **býfluga flýgur eftir ferli** (motion path) og ör birtist.
@@ -28,14 +28,14 @@ Lestu það með `index.html`, `css/style.css` og `js/main.js` opin hlið við h
 | --- | --- | --- |
 | Allt í SVG, engin `<canvas>` | `index.html` | eitt `<svg id="leikur">` |
 | Síma- og spjaldtölvuvænt | `style.css`, `radaUpp()` | `100dvh`, `touch-action: none`, viewBox skipt eftir stefnu skjás |
-| **Animation** (anime.js) | `main.js` | `animate()` t.d. í `lyfta`, `smella`, `vagga`, `snua`, `stjornur` |
+| **Animation** (anime.js) | `main.js` | `animate()` t.d. í `lyfta`, `smella`, `vagga`, `klaraSnuning`, `stjornur` |
 | **Timeline** | `main.js` | `createTimeline()` í `byrjun`, `fljugaHeim`, `solin`, `synaKennslu`, `sigur`, `nyUmferd` |
 | **Line drawing** | `main.js` | `svg.createDrawable` + `draw`: útlínur mótanna, hringur um fingur, hringur um sólina, hringur í kennsluhendinni |
 | **Morphing** | `main.js` | `svg.morphTo`: munnur sólarinnar (bros/hissa/stórbros), skýið verður hjarta |
 | **Motion path** | `main.js` | `svg.createMotionPath('#leid')`: býflugan í `sigur()` |
 | Kvikun þegar fingur snertir / er haldið / er lyft | `main.js` | `haldHringur`, `fjarlaegjaHring`, `lyfta`, `sleppHringur` |
 | Kvikun sem kennir hvernig á að spila | `main.js` | `synaKennslu()` (höndin) og útlínurnar sem teiknast í byrjun |
-| **Multi-touch** | `pointerdown` | `fingur[e.pointerId]`, annar fingur snýr bitanum (`snua`). Líka hægt að draga tvo bita í einu |
+| **Multi-touch** | `pointerdown`, `pointermove` | `fingur[e.pointerId]`. Tveggja fingra snúningur (`byrjaSnuning`, `uppfaeraSnuning`, `klaraSnuning`). Líka hægt að draga tvo bita í einu |
 | **Time-based gesture** | `pointerdown` | long press 0,4 sek á bita (`HALDA_MS`) og **2 sek á sól** (`HALDA_SOL_MS`) |
 | **Pan** | `pointermove` | biti eltir fingur, smellur á sinn stað í `sleppa()` |
 | **Swipe** | `fingriLyft()` | strjúka til hliðar eftir sigur → `nyUmferd()` |
@@ -231,7 +231,19 @@ Athugar hvort skjárinn er breiðari en hár, velur viewBox og heimastað bitann
 - `smella(bit)`: bitinn rennur í mótið og þrýstist niður og upp (`scale: [1.15, 0.9, 1]`).
 - `fljugaHeim(bit)`: **timeline**: fyrst vaggar hann („nei“), svo flýgur hann heim og stækkar á leiðinni (lítur út eins og hopp).
 - `vagga(bit)`: vaggar til hliðanna. Notað þegar bankað er stutt á bita eða þegar reynt er að snúa hring/ferningi (þeir þurfa ekki að snúast).
-- `snua(bit)`: bætir 90 við `bit.snuningur` og snýr bitanum. Hjartað byrjar í 270°, eftir einn snúning er það 360°, og `360 % 360 === 0` = snýr rétt.
+### Tveggja fingra snúningur
+Fingur 1 dregur bitann. Fingur 2 snýr honum. Við horfum á **línuna milli fingranna tveggja**: þegar hún snýst, snýst bitinn jafn mikið.
+
+- `horn(a, b)`: hornið á línunni frá fingri a að fingri b, í gráðum. `Math.atan2(dy, dx)` gefur hornið í radíönum og `* 180 / Math.PI` breytir í gráður.
+- `byrjaSnuning(s, dragari)`: kallað þegar fingur 2 snertir skjáinn. Tengir fingurna saman (`s.snyr = dragari` og `dragari.snuningsfingur = s`), vistar byrjunarhornið (`s.sidastaHorn`) og hve mikið bitinn var snúinn (`s.byrjunSnuningur`).
+- `uppfaeraSnuning(s)`: kallað í **hvert sinn sem annar hvor fingurinn hreyfist**. Reiknar nýja hornið, dregur gamla hornið frá og leggur breytinguna við `s.samtals`. Svo `utils.set(bit, { rotate: byrjunSnuningur + samtals })` svo bitinn fylgi fingrunum strax.
+  - Af hverju `if (breyting > 180) breyting -= 360`? `atan2` gefur gildi frá -180 til 180. Þegar línan fer framhjá 180° hoppar talan t.d. úr 179 í -179. Það lítur út eins og -358° breyting en er í raun bara +2°. Þessar línur laga það.
+  - Breytingin er lögð saman í smáum skrefum svo hægt sé að snúa oftar en hálfan hring.
+- `klaraSnuning(s)`: kallað þegar öðrum hvorum fingrinum er lyft. `Math.round(r / 90) * 90` = næstu 90 gráður (t.d. 350° → 360°, 10° → 0°). Bitinn snýst þangað með `animate` og `outBack` (smá skopp) og fingurnir eru aftengdir.
+
+Hjartað byrjar í 270°. Snúið um ~90° réttsælis verður það 360°, og `360 % 360 === 0` = snýr rétt. Það má líka snúa rangsælis í 0°.
+
+Hringur og ferningur passa hvernig sem þeir snúa, svo þeir vagga bara (`vagga`) ef reynt er að snúa þeim.
 - `solin(svipur)`: **timeline + morphing**: munnurinn breytist, sólin hoppar á sama tíma (`0`), og eftir 1 sek fer munnurinn aftur í bros.
 - `stjornur(x, y)`: býr til 8 stjörnur. `i * Math.PI / 4` = 45° á milli (8 × 45° = hringur). `cos` og `sin` reikna hvert hver stjarna fer. Stjarnan er fjarlægð í `onComplete`.
 - `nyrHringur(...)`: býr til `<circle>` í `#ahrif`. **SVG-element þarf að búa til með `createElementNS`** og SVG-nafnrýminu, ekki `createElement`.
@@ -296,8 +308,9 @@ Segir vafranum að senda alla næstu atburði þessa fingurs til `#leikur`, lík
 ### pointerdown – skref fyrir skref
 1. Reikna SVG-hnit og finna bitann með `e.target.closest('.bit')` (`null` ef enginn biti).
 2. Vista nýjan fingur í `fingur`. Stöðva kennsluhöndina.
-3. **Multi-touch:** `Object.values(fingur).find(annar => annar.dregur)` = er annar fingur að draga bita?
-   Ef já og nýi fingurinn snerti autt svæði (eða sama bitann) → `snua` (eða `vagga` fyrir hring/ferning). Svo `return`.
+3. **Multi-touch:** `Object.values(fingur).find(annar => annar.dregur && annar !== f)` = er annar fingur að draga bita?
+   Ef já og nýi fingurinn snerti autt svæði (eða sama bitann) → `byrjaSnuning(f, dragari)` (eða `vagga` fyrir hring/ferning). Svo `return`.
+   Ef það er þegar verið að snúa bitanum (`dragari.snuningsfingur`) er þriðja fingrinum sleppt.
    Ef nýi fingurinn snerti **annan** bita heldur kóðinn áfram, svo það má draga tvo bita samtímis með tveimur fingrum.
 4. **Sól (2 sek long press):** ef snert var á sólina → `byrjaSolHald(f)`.
 5. **Biti (long press 0,4 sek):** `haldHringur` byrjar og `setTimeout` bíður í `HALDA_MS`. Þegar tíminn er liðinn:
@@ -308,13 +321,16 @@ Segir vafranum að senda alla næstu atburði þessa fingurs til `#leikur`, lík
    - `lyfta(bit)`
 
 ### pointermove
-- Ef fingurinn er að draga → `utils.set(f.bit, { translateX: p.x + f.bilX, ... })` = **pan**. `utils.set` er notað (ekki `animate`) því bitinn á að fylgja fingrinum strax.
+- Fyrst er staðsetning fingursins vistuð í `f.x`, `f.y`. `horn()` þarf að vita hvar báðir fingurnir eru.
+- Ef fingurinn er að draga → `utils.set(f.bit, { translateX: p.x + f.bilX, ... })` = **pan**. `utils.set` er notað (ekki `animate`) því bitinn á að fylgja fingrinum strax. Ef annar fingur er að snúa er snúningurinn líka uppfærður, því línan milli fingranna breytist.
+- Ef fingurinn er snúningsfingur (`f.snyr`) → `uppfaeraSnuning(f)`.
 - Ef haldið er á sólinni og fingurinn fer meira en 40 einingar → hætt við.
 - Ef haldið er á bita og fingurinn fer meira en 25 einingar **áður en tíminn er liðinn** → hætt við long press og bitinn vaggar (barnið þarf að halda kyrru fyrst).
 
 ### fingriLyft (pointerup / pointercancel)
 1. Taka fingurinn út úr `fingur` og sýna gula `sleppHringur`.
-2. Var hann að draga? → `sleppa(f.bit)` (rétt/rangt).
+2. Var hann að draga? → ef verið var að snúa er `klaraSnuning` kallað fyrst, svo `sleppa(f.bit)` (rétt/rangt).
+   Var hann snúningsfingur? → `klaraSnuning(f)`. Bitinn smellur í næstu 90° og fyrsti fingurinn heldur áfram að draga.
 3. Hélt hann á sólinni? → hætta við (fingri lyft fyrir 2 sek).
 4. Var long press ekki búinn? → hætta við og vagga.
 5. Annars, ef leikurinn er búinn → athuga **swipe**:
@@ -347,7 +363,8 @@ animate('.vaengur', { scaleY: [1, 0.4], duration: 80, loop: true, alternate: tru
 1. **Kennsluhönd bætt við** (`synaKennslu`, `stoppaKennslu`, `bidaEftirKennslu`, `#hond` í HTML). Verkefnið biður um kvikun sem kennir barninu hvernig á að spila.
 2. **Long press í 2 sek á sólina til að byrja upp á nýtt** (`byrjaSolHald`, `haettaSolHaldi`, `#tima-hringur`). Tímatengd snerting eins og í dæminu í verklýsingunni, með line drawing sem sýnir hvað tíminn er langt kominn.
 3. **Villa löguð í `vagga()`**: hún setti `scale: 1`. Þegar reynt var að snúa hring/ferningi með öðrum fingri missti bitinn „lyftinguna“ á meðan hann var dreginn. Nú breytir `vagga` bara `rotate`.
-4. **`nyUmferd()` gerð örugg hvenær sem er**: stöðvar sigur-tímalínuna og `setTimeout`, felur býfluguna og setur `scale: 1` á bitana. Það þurfti því nú má byrja upp á nýtt í miðjum leik (sólin).
+4. **Snúningur með tveimur fingrum eins og í síma**: áður snerist bitinn um 90° þegar pikkað var með öðrum fingri. Nú snýst hann með fingrunum (`horn`, `byrjaSnuning`, `uppfaeraSnuning`, `klaraSnuning`).
+5. **`nyUmferd()` gerð örugg hvenær sem er**: stöðvar sigur-tímalínuna og `setTimeout`, felur býfluguna og setur `scale: 1` á bitana. Það þurfti því nú má byrja upp á nýtt í miðjum leik (sólin).
 
 ---
 
@@ -357,7 +374,7 @@ animate('.vaengur', { scaleY: [1, 0.4], duration: 80, loop: true, alternate: tru
 
 **Hvernig veistu hvaða biti var snertur?** `e.target.closest('.bit')`. `e.target` er `.snertiflotur` og `closest` fer upp DOM-tréð þar til það finnur `.bit`.
 
-**Hvernig virkar multi-touch hjá þér?** Hver fingur hefur `pointerId`. Ég geymi hvern fingur í hlutnum `fingur`. Þegar nýr fingur kemur athuga ég hvort annar fingur er nú þegar að draga. Ef svo er snýr nýi fingurinn bitanum um 90°.
+**Hvernig virkar multi-touch hjá þér?** Hver fingur hefur `pointerId`. Ég geymi hvern fingur í hlutnum `fingur`. Þegar nýr fingur kemur athuga ég hvort annar fingur er nú þegar að draga bita. Ef svo er tengi ég fingurna saman. Í hvert sinn sem annar þeirra hreyfist reikna ég hornið á línunni milli þeirra með `Math.atan2` og sný bitanum jafn mikið og línan snerist. Þegar fingri er lyft smellur bitinn í næstu 90°.
 
 **Hvað er time-based gesture hjá þér?** Tvennt: (1) halda á bita í 400 ms áður en hann lyftist, gert með `setTimeout` sem er hætt við (`clearTimeout`) ef fingri er lyft eða hann hreyfður of snemma. (2) Halda á sólinni í 2 sek til að byrja upp á nýtt.
 

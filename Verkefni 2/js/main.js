@@ -80,9 +80,40 @@ function vagga(bit) {
   animate(bit, { rotate: [r, r - 10, r + 10, r], duration: 400 });
 }
 
-function snua(bit) {
-  bit.snuningur += 90;
-  animate(bit, { rotate: bit.snuningur, duration: 300, ease: 'outBack(2)' });
+// hornið (í gráðum) á línunni frá fingri a að fingri b
+function horn(a, b) {
+  return Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+}
+
+// s er fingurinn sem snýr, s.snyr er fingurinn sem dregur bitann
+function byrjaSnuning(s, dragari) {
+  s.snyr = dragari;
+  dragari.snuningsfingur = s;
+  s.sidastaHorn = horn(dragari, s);
+  s.samtals = 0;
+  s.byrjunSnuningur = utils.get(dragari.bit, 'rotate', false);
+}
+
+// kallað í hvert sinn sem annar hvor fingurinn hreyfist
+function uppfaeraSnuning(s) {
+  const h = horn(s.snyr, s);
+  let breyting = h - s.sidastaHorn;
+  // atan2 hoppar úr 180 í -180, þetta lagar það
+  if (breyting > 180) breyting -= 360;
+  if (breyting < -180) breyting += 360;
+  s.samtals += breyting;
+  s.sidastaHorn = h;
+  utils.set(s.snyr.bit, { rotate: s.byrjunSnuningur + s.samtals });
+}
+
+// bitinn smellur í næstu 90 gráður þegar snúningi lýkur
+function klaraSnuning(s) {
+  const bit = s.snyr.bit;
+  const r = utils.get(bit, 'rotate', false);
+  bit.snuningur = Math.round(r / 90) * 90;
+  animate(bit, { rotate: bit.snuningur, duration: 250, ease: 'outBack(2)' });
+  s.snyr.snuningsfingur = null;
+  s.snyr = null;
 }
 
 // svipur er 'bros', 'hissa' eða 'storbros'
@@ -322,16 +353,17 @@ leikur.addEventListener('pointerdown', (e) => {
   const bit = e.target.closest('.bit');
   leikur.setPointerCapture(e.pointerId);
 
-  const f = { startX: p.x, startY: p.y, startTimi: Date.now() };
+  const f = { x: p.x, y: p.y, startX: p.x, startY: p.y, startTimi: Date.now() };
   fingur[e.pointerId] = f;
   stoppaKennslu();
   bidaEftirKennslu();
 
-  // ef annar fingur er að draga bita þá snýr þessi fingur honum
-  const dragari = Object.values(fingur).find((annar) => annar.dregur);
+  // ef annar fingur er að draga bita þá snýr þessi fingur honum (eins og að snúa mynd í síma)
+  const dragari = Object.values(fingur).find((annar) => annar.dregur && annar !== f);
   if (dragari && (bit === null || bit === dragari.bit)) {
-    if (dragari.bit.classList.contains('snyst')) snua(dragari.bit);
-    else vagga(dragari.bit);
+    if (dragari.snuningsfingur) return; // það er þegar verið að snúa
+    if (dragari.bit.classList.contains('snyst')) byrjaSnuning(f, dragari);
+    else vagga(dragari.bit); // hringur og ferningur þurfa ekki að snúast
     return;
   }
 
@@ -361,9 +393,14 @@ leikur.addEventListener('pointermove', (e) => {
   const f = fingur[e.pointerId];
   if (!f) return;
   const p = svgPunktur(e);
+  f.x = p.x;
+  f.y = p.y;
 
   if (f.dregur) {
     utils.set(f.bit, { translateX: p.x + f.bilX, translateY: p.y + f.bilY });
+    if (f.snuningsfingur) uppfaeraSnuning(f.snuningsfingur);
+  } else if (f.snyr) {
+    uppfaeraSnuning(f);
   } else if (f.sol && Math.hypot(p.x - f.startX, p.y - f.startY) > 40) {
     haettaSolHaldi(f);
   } else if (f.hringur && Math.hypot(p.x - f.startX, p.y - f.startY) > 25) {
@@ -383,7 +420,10 @@ function fingriLyft(e) {
   sleppHringur(p.x, p.y);
 
   if (f.dregur) {
+    if (f.snuningsfingur) klaraSnuning(f.snuningsfingur);
     sleppa(f.bit);
+  } else if (f.snyr) {
+    klaraSnuning(f);
   } else if (f.sol) {
     haettaSolHaldi(f);
   } else if (f.hringur) {
