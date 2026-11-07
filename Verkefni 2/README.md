@@ -1,1 +1,12 @@
 # Trépúsl
+
+Formapúsl fyrir börn í síma og spjaldtölvu. Gert með SVG, anime.js v4.5 og Pointer Events.
+
+- Haltu á bita þar til hringurinn er búinn og dragðu hann í rétt gat.
+- Hjarta og þríhyrning þarf að snúa: haltu á bitanum og snertu skjáinn með öðrum fingri.
+- Strjúktu til hliðar þegar allir bitar eru komnir til að spila aftur.
+- Haltu á sólinni í 2 sekúndur til að byrja upp á nýtt hvenær sem er.
+
+Opnaðu með vefþjóni (t.d. Live Server), því `main.js` er ES-module.
+
+Allar útskýringar á kóðanum eru í [UTSKYRINGAR.md](UTSKYRINGAR.md).
