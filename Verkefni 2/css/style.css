@@ -1,46 +1,31 @@
-/* =========================================================
-   style.css – allt ÚTLIT leiksins
-   (Hreyfingarnar eru gerðar með anime.js í main.js)
-   ========================================================= */
-
 html, body {
   margin: 0;
   height: 100%;
   overflow: hidden;
   background: #6fbf4c;
-  overscroll-behavior: none;      /* síðan skoppar ekki þegar dregið er */
+  overscroll-behavior: none;
 }
 
 #leikur {
   display: block;
   width: 100vw;
-  height: 100dvh;                 /* rétt hæð á símum, líka þegar vafrastikan hverfur */
-
-  /* MIKILVÆGT: vafrinn má ekki nota fingurna til að skruna/þysja.
-     Annars "missir" leikurinn fingurinn í miðjum drætti (pointercancel). */
+  height: 100dvh;
+  /* annars skrunar/þysjar vafrinn og sendir pointercancel í miðjum drætti */
   touch-action: none;
-
   user-select: none;
   -webkit-user-select: none;
-  -webkit-touch-callout: none;    /* engin valmynd við langt þrýsting á iPhone */
+  -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-
-/* ================= BAKGRUNNUR ================= */
+/* bakgrunnur */
 .haed-aftur { fill: #9bd672; }
-.haed-fram  { fill: #6fbf4c; }
-
+.haed-fram { fill: #6fbf4c; }
 #sky-form { fill: #fff; }
-
 .sol-hringur { fill: #ffd60a; stroke: #ffb703; stroke-width: 5; }
-#geislar     { fill: #ffc300; }
-
-/* Augu sólarinnar blikka – þau eiga að minnka um sína eigin miðju */
+#geislar { fill: #ffc300; }
 #augu { transform-box: fill-box; transform-origin: center; }
 
-/* Sól og ský eru staðsett með CSS (px = SVG-einingar).
-   Á hlið (landscape) er skjárinn breiðari, svo þau færast til hægri. */
 #sol { transform: translate(590px, 90px); }
 #sky { transform: translate(330px, 80px); }
 
@@ -49,14 +34,12 @@ html, body {
   #sky { transform: translate(800px, 75px); }
 }
 
-
-/* ================= BORÐ ================= */
-.bord        { fill: #c98b4f; }
+/* borð og mót */
+.bord { fill: #c98b4f; }
 .bord-skuggi { fill: #000; opacity: .18; }
-.bord-ljos   { fill: url(#glans); stroke: #7a4a20; stroke-opacity: .5; stroke-width: 6; }
-.aedar path  { fill: none; stroke: #8a5a2b; stroke-opacity: .2; stroke-width: 4; stroke-linecap: round; }
+.bord-ljos { fill: url(#glans); stroke: #7a4a20; stroke-opacity: .5; stroke-width: 6; }
+.aedar path { fill: none; stroke: #8a5a2b; stroke-opacity: .2; stroke-width: 4; stroke-linecap: round; }
 
-/* Mótin */
 .gat { fill: url(#gat-litur); }
 .utlina {
   fill: none;
@@ -66,45 +49,30 @@ html, body {
   stroke-linecap: round;
 }
 
-
-/* ================= PÚSLBITAR ================= */
+/* bitar */
 .bit {
   cursor: grab;
-  /* Skugginn lætur bitana líta út eins og þykka viðarkubba */
   filter: drop-shadow(5px 8px 0 rgba(43, 26, 14, .3));
 }
-/* Bitanum lyft: skugginn fer lengra frá = bitinn "svífur" */
-.bit.lyftur {
-  filter: drop-shadow(14px 24px 4px rgba(43, 26, 14, .3));
-}
-/* Bitinn kominn í mótið: enginn skuggi = hann "sökk" ofan í gatið */
-.bit.kominn {
-  filter: none;
-  cursor: default;
-}
+.bit.lyftur { filter: drop-shadow(14px 24px 4px rgba(43, 26, 14, .3)); }
+.bit.kominn { filter: none; cursor: default; }
 
-.snertiflotur { fill: transparent; }    /* ósýnilegt en tekur við snertingu */
+.snertiflotur { fill: transparent; }
 
 .hringur, .ferningur, .thrihyrningur, .hjarta {
   stroke-width: 7;
   stroke-linejoin: round;
 }
-.hringur       { fill: #e63946; stroke: #a4161a; }
-.ferningur     { fill: #3a86ff; stroke: #1f5fcc; }
+.hringur { fill: #e63946; stroke: #a4161a; }
+.ferningur { fill: #3a86ff; stroke: #1f5fcc; }
 .thrihyrningur { fill: #ffbe0b; stroke: #c98f00; }
-.hjarta        { fill: #ff70a6; stroke: #c94f7f; }
-.glans         { fill: url(#glans); }
+.hjarta { fill: #ff70a6; stroke: #c94f7f; }
+.glans { fill: url(#glans); }
 
-/* Hlutir sem eiga EKKI að taka við snertingu */
 #ahrif, #byfluga, #or, use { pointer-events: none; }
-
-
-/* ================= ÁHRIF ================= */
-/* Býflugan og örin eru faldar í byrjun – anime.js lætur þær birtast */
 #byfluga, #or { opacity: 0; }
 .vaengur { fill: #e0f4ff; stroke: #8ecae6; stroke-width: 3; opacity: .9; }
 
-/* Hringir undir fingrum og stjörnur (búin til í JavaScript) */
 .fingurhringur {
   fill: none;
   stroke: #fff;
