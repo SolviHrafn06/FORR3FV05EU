@@ -1,59 +1,119 @@
-/* =============================================================
-   style.css – Uppsetning fyrir síma og spjaldtölvur
-   ============================================================= */
+/* =========================================================
+   style.css – allt ÚTLIT leiksins
+   (Hreyfingarnar eru gerðar með anime.js í main.js)
+   ========================================================= */
 
 html, body {
   margin: 0;
-  padding: 0;
-  width: 100%;
   height: 100%;
-  overflow: hidden;              /* engin skrunstika */
-  background: #bfe6ff;
-  /* Kemur í veg fyrir að síðan "skoppi" eða endurhlaðist þegar dregið er niður */
-  overscroll-behavior: none;
+  overflow: hidden;
+  background: #6fbf4c;
+  overscroll-behavior: none;      /* síðan skoppar ekki þegar dregið er */
 }
 
-body {
-  /* Fyllir allan skjáinn, líka á símum þar sem vafrastikan birtist og hverfur */
-  height: 100dvh;
-  position: fixed;
-  inset: 0;
-  /* Svæði undir "notch" og heimastiku á iPhone */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
-           env(safe-area-inset-bottom) env(safe-area-inset-left);
-  box-sizing: border-box;
-}
-
-#game {
+#leikur {
   display: block;
-  width: 100%;
-  height: 100%;
-  /* MIKILVÆGT fyrir Pointer Events á snertiskjá:
-     vafrinn má ekki nota fingurhreyfingar til að skruna eða þysja,
-     annars fáum við pointercancel í miðjum drætti. */
+  width: 100vw;
+  height: 100dvh;                 /* rétt hæð á símum, líka þegar vafrastikan hverfur */
+
+  /* MIKILVÆGT: vafrinn má ekki nota fingurna til að skruna/þysja.
+     Annars "missir" leikurinn fingurinn í miðjum drætti (pointercancel). */
   touch-action: none;
-  /* Ekki velja texta / myndir og ekki sýna valmynd við langt þrýsting (iOS) */
+
   user-select: none;
   -webkit-user-select: none;
-  -webkit-touch-callout: none;
+  -webkit-touch-callout: none;    /* engin valmynd við langt þrýsting á iPhone */
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Púslbitar og hnappar sýna að hægt sé að snerta þá (fyrir mús) */
-.piece-body, #lock, #next { cursor: grab; }
-.piece.placed .piece-body { cursor: default; }
 
-/* Skuggar og skraut taka ekki við snertingu – aðeins sjálfur bitinn */
-.piece-shadow, .piece-detail, #holes { pointer-events: none; }
+/* ================= BAKGRUNNUR ================= */
+.haed-aftur { fill: #9bd672; }
+.haed-fram  { fill: #6fbf4c; }
 
-/* Örin er ekki snertanleg fyrr en hún birtist */
-#next { pointer-events: none; }
-#next.active { pointer-events: auto; }
+#sky-form { fill: #fff; }
 
-/* Fyrir þá sem vilja minni hreyfingu – samt þurfa hreyfingar að sjást */
-@media (prefers-reduced-motion: reduce) {
-  #board-grain { display: none; }
+.sol-hringur { fill: #ffd60a; stroke: #ffb703; stroke-width: 5; }
+#geislar     { fill: #ffc300; }
+
+/* Augu sólarinnar blikka – þau eiga að minnka um sína eigin miðju */
+#augu { transform-box: fill-box; transform-origin: center; }
+
+/* Sól og ský eru staðsett með CSS (px = SVG-einingar).
+   Á hlið (landscape) er skjárinn breiðari, svo þau færast til hægri. */
+#sol { transform: translate(590px, 90px); }
+#sky { transform: translate(330px, 80px); }
+
+@media (orientation: landscape) {
+  #sol { transform: translate(1140px, 90px); }
+  #sky { transform: translate(800px, 75px); }
 }
 
-/* Augun blikka um sína eigin miðju (anime.js scaleY) */
-#sun-eyes { transform-box: fill-box; transform-origin: center; }
+
+/* ================= BORÐ ================= */
+.bord        { fill: #c98b4f; }
+.bord-skuggi { fill: #000; opacity: .18; }
+.bord-ljos   { fill: url(#glans); stroke: #7a4a20; stroke-opacity: .5; stroke-width: 6; }
+.aedar path  { fill: none; stroke: #8a5a2b; stroke-opacity: .2; stroke-width: 4; stroke-linecap: round; }
+
+/* Mótin */
+.gat { fill: url(#gat-litur); }
+.utlina {
+  fill: none;
+  stroke: #f7dcb4;
+  stroke-width: 14;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+
+/* ================= PÚSLBITAR ================= */
+.bit {
+  cursor: grab;
+  /* Skugginn lætur bitana líta út eins og þykka viðarkubba */
+  filter: drop-shadow(5px 8px 0 rgba(43, 26, 14, .3));
+}
+/* Bitanum lyft: skugginn fer lengra frá = bitinn "svífur" */
+.bit.lyftur {
+  filter: drop-shadow(14px 24px 4px rgba(43, 26, 14, .3));
+}
+/* Bitinn kominn í mótið: enginn skuggi = hann "sökk" ofan í gatið */
+.bit.kominn {
+  filter: none;
+  cursor: default;
+}
+
+.snertiflotur { fill: transparent; }    /* ósýnilegt en tekur við snertingu */
+
+.hringur, .ferningur, .thrihyrningur, .hjarta {
+  stroke-width: 7;
+  stroke-linejoin: round;
+}
+.hringur       { fill: #e63946; stroke: #a4161a; }
+.ferningur     { fill: #3a86ff; stroke: #1f5fcc; }
+.thrihyrningur { fill: #ffbe0b; stroke: #c98f00; }
+.hjarta        { fill: #ff70a6; stroke: #c94f7f; }
+.glans         { fill: url(#glans); }
+
+/* Hlutir sem eiga EKKI að taka við snertingu */
+#ahrif, #byfluga, #or, use { pointer-events: none; }
+
+
+/* ================= ÁHRIF ================= */
+/* Býflugan og örin eru faldar í byrjun – anime.js lætur þær birtast */
+#byfluga, #or { opacity: 0; }
+.vaengur { fill: #e0f4ff; stroke: #8ecae6; stroke-width: 3; opacity: .9; }
+
+/* Hringir undir fingrum og stjörnur (búin til í JavaScript) */
+.fingurhringur {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+.slepphringur {
+  fill: none;
+  stroke: #ffe066;
+  stroke-width: 8;
+}
+.stjarna { fill: #ffd60a; stroke: #fff; stroke-width: 2; }
