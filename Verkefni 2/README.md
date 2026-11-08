@@ -7,3 +7,4 @@ Formapúsl fyrir börn í síma og spjaldtölvu. Gert með SVG, anime.js v4.5 og
 - Strjúktu til hliðar þegar allir bitar eru komnir til að spila aftur.
 - Haltu á sólinni í 2 sekúndur til að byrja upp á nýtt hvenær sem er.
 
+spila leikinn á [github pages](https://solvihrafn06.github.io/FORR3FV05EU/Verkefni%202/)
