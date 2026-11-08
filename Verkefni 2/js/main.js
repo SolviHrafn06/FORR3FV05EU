@@ -348,10 +348,10 @@ leikur.addEventListener('pointerdown', (e) => {
   stoppaKennslu();
   bidaEftirKennslu();
 
-  // ef annar fingur heldur á bita þá snýr þessi fingur honum
-  const dragari = Object.values(fingur).find((annar) => annar.dregur);
-  if (dragari && (bit === null || bit === dragari.bit)) {
-    if (dragari.annar) return; // það er þegar verið að snúa honum
+  // ef annar fingur heldur á bita þá snýr þessi fingur honum,
+  // sama hvar á skjánum hann lendir (líka ofan á öðrum bita)
+  const dragari = Object.values(fingur).find((annar) => annar.dregur && !annar.annar);
+  if (dragari) {
     if (dragari.bit.classList.contains('snyst')) byrjaSnuning(dragari, f);
     else vagga(dragari.bit); // hringur og ferningur þurfa ekki að snúast
     return;
