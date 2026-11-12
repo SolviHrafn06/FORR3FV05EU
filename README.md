@@ -19,7 +19,7 @@ Opnaðu viðeigandi verkefnamöppu og fylgdu þeim leiðbeiningum sem fylgja ver
 
 
 ## Hlekkir
-[verkefni 1](./Verkefni%201/index.html)
-[verkefni 2](./Verkefni%202/index.html)
+- [verkefni 1](./Verkefni%201/index.html)
+- [verkefni 2](./Verkefni%202/index.html)
 ---
 
