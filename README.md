@@ -17,5 +17,9 @@ Möppur og skrár eru settar upp eftir verkefnum eða viðfangsefnum eftir því
 
 Opnaðu viðeigandi verkefnamöppu og fylgdu þeim leiðbeiningum sem fylgja verkefninu. Kröfur um hugbúnað, uppsetningu eða keyrslu geta verið mismunandi eftir verkefnum.
 
+
+## Hlekkir
+[verkefni 1](./Verkefni%201/index.html)
+[verkefni 2](./Verkefni%202/index.html)
 ---
 
