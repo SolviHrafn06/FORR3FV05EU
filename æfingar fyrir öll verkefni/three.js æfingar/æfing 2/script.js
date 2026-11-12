@@ -14,11 +14,15 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.set(5, 4, 7);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-document.body.style.margin = '0';
-document.body.appendChild(renderer.domElement);
+const renderContainer = document.querySelector('#scene-container, #container, main') || document.body;
+if (renderContainer === document.body) {
+	document.body.style.margin = '0';
+	document.body.style.overflow = 'hidden';
+}
+renderer.domElement.style.display = 'block';
+renderContainer.appendChild(renderer.domElement);
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x303040, 2));
 const keyLight = new THREE.DirectionalLight(0xffffff, 3);
@@ -57,11 +61,14 @@ loader.load(
 );
 
 function onResize() {
-	camera.aspect = window.innerWidth / window.innerHeight;
+	const width = renderContainer.clientWidth || window.innerWidth;
+	const height = renderContainer.clientHeight || window.innerHeight;
+	camera.aspect = width / height;
 	camera.updateProjectionMatrix();
-	renderer.setSize(window.innerWidth, window.innerHeight);
+	renderer.setSize(width, height);
 }
 window.addEventListener('resize', onResize);
+onResize();
 
 function animate() {
 	requestAnimationFrame(animate);
