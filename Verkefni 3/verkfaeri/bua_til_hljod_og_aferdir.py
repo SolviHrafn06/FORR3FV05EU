@@ -153,6 +153,46 @@ def sprenging():
     vista('sprenging', dynkur + brak + np.sin(2 * np.pi * 50 * t) * np.exp(-t * 7), 0.9)
 
 
+def r2():
+    """R2-D2 píp: nokkur stutt flaut sem renna upp og niður með titringi."""
+    r = np.random.default_rng(42)   # sér slembigjafi svo hin hljóðin breytist ekki
+    hlutar = []
+    for _ in range(7):
+        lengd = r.uniform(0.06, 0.18)
+        t = timi(lengd)
+        byrjun, endir = r.uniform(900, 3200, 2)
+        tidni = byrjun + (endir - byrjun) * (t / lengd) ** r.uniform(0.5, 2)
+        tidni *= 1 + 0.04 * np.sin(2 * np.pi * r.uniform(20, 45) * t)   # titringur
+        fasi = 2 * np.pi * np.cumsum(tidni) / RATE
+        hlutar.append(np.sin(fasi) * np.sin(np.pi * t / lengd) ** 0.5)
+        hlutar.append(np.zeros(int(RATE * r.uniform(0.0, 0.05))))
+    vista('r2', np.concatenate(hlutar), 0.7)
+
+
+def geimhljod():
+    """Hljóð fyrir geimhlutann: hreyfill (lykkja), geislabyssa skipsins og öskur TIE flauganna."""
+    r = np.random.default_rng(99)
+
+    t = timi(4.25)
+    hreyfill = laagpass(r.normal(0, 1, len(t)), 0.985) * 10
+    hreyfill += 0.5 * np.sin(2 * np.pi * 60 * t) + 0.25 * np.sin(2 * np.pi * 120.5 * t)
+    hreyfill *= 0.85 + 0.15 * np.sin(2 * np.pi * t / 2.125)
+    vista('hreyfill', lykkja(hreyfill), 0.7)
+
+    t = timi(0.25)
+    tidni = 180 + 900 * np.exp(-t * 22)
+    fasi = 2 * np.pi * np.cumsum(tidni) / RATE
+    vista('geislabyssa', (np.sin(fasi) + 0.4 * np.sign(np.sin(fasi * 0.5))) * np.exp(-t * 12), 0.75)
+
+    # TIE öskur: hátt, rámt hljóð sem rennur niður (dopplerhrif þegar flaugin þýtur hjá)
+    t = timi(1.4)
+    tidni = 900 - 450 * (t / t[-1]) ** 1.5
+    fasi = 2 * np.pi * np.cumsum(tidni) / RATE
+    oskur = np.sin(fasi) + 0.6 * np.sin(1.5 * fasi + 2 * np.sin(fasi * 0.07))
+    oskur += laagpass(r.normal(0, 1, len(t)), 0.3) * 1.2
+    vista('tie', oskur * np.abs(np.sin(np.pi * t / t[-1])) ** 0.7, 0.75)
+
+
 # ---------- áferðir ----------
 
 def vista_mynd(nafn, gildi, litur):
@@ -217,5 +257,7 @@ if __name__ == '__main__':
     blaster()
     endurkast()
     sprenging()
+    r2()
+    geimhljod()
     golf()
     veggur()

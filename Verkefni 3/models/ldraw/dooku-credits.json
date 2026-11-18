@@ -1,0 +1,42 @@
+{
+  "p/4-4cylc.dat": {
+    "author": "Alex Taylor [anathema]",
+    "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+  },
+  "p/4-4cyli.dat": {
+    "author": "James Jessiman",
+    "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+  },
+  "p/4-4cyls.dat": {
+    "author": "Donald Sutter [technog]",
+    "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+  },
+  "p/4-4disc.dat": {
+    "author": "James Jessiman",
+    "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+  },
+  "p/4-4edge.dat": {
+    "author": "James Jessiman",
+    "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+  },
+  "p/4-4ring2.dat": {
+    "author": "James Jessiman",
+    "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+  },
+  "p/stud2.dat": {
+    "author": "James Jessiman",
+    "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+  },
+  "parts/30374.dat": {
+    "author": "Steve Bliss [sbliss]",
+    "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+  },
+  "parts/42114.dat": {
+    "author": "Tim Gould [timgould]",
+    "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+  },
+  "parts/42114c01.dat": {
+    "author": "Massimo Maso [Sirio]",
+    "license": "Licensed under CC BY 4.0 : see CAreadme.txt"
+  }
+}

@@ -1,17 +1,19 @@
 import * as THREE from 'three';
 
-// Anakin og B1 droidinn eru með beinagrind (skeleton) en engar tilbúnar hreyfingar.
-// Hér eru hreyfiklippur (AnimationClip) búnar til í kóða með því að snúa beinunum.
+// Ganga, hlaup og kyrrstaða eru alvöru hreyfingar úr hreyfiföngun (mocap) sem voru fluttar yfir
+// á Anakin og B1 með verkfaeri/flytja-hreyfingar.html og eru í hreyfingar/hreyfingar.json.
+//
+// Hér eru búnar til hreyfingarnar sem mocap-ið hefur ekki: hægri hönd Anakins sem heldur á
+// sverðinu (vörn, högg, verja skot), fingur sem kreppast utan um skaftið og hendur B1 sem miða byssu.
 //
 // Hver hreyfing er listi af { bein, as, ... }:
-//   bein   - nafnið á beininu, t.d. 'ValveBipedBip01_R_Thigh_052'
-//   as     - 'x', 'y' eða 'z': ásinn sem er snúið um, í hnitum módelsins í hvíldarstöðu
+//   bein   - nafnið á beininu, t.d. 'ValveBipedBip01_R_UpperArm_015'
+//   as     - 'x', 'y' eða 'z': ásinn sem er snúið um, í hnitum módelsins í hvíldarstöðu (T-stelling)
 //   midja, sveifla, fasi - hornið sveiflast eins og sínusbylgja (gráður):
 //            horn = midja + sveifla * sin(2π * t / lengd + fasi)
-//   lyklar - EÐA fylki af hornum sem dreifast jafnt yfir klippuna (fyrir högg sem gerast einu sinni)
+//   lyklar - EÐA fylki af hornum sem dreifast jafnt yfir klippuna (fyrir hreyfingar sem gerast einu sinni)
 //
 // Ásar módelanna (bæði snúa í +x í hvíldarstöðu): x = fram, y = upp, z = til hægri.
-// Fótur sem vísar niður fer FRAM við jákvæðan snúning um z.
 
 const ASAR = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
 const SKREF = 16;   // hversu mörg keyframes eru í hverri klippu
@@ -69,100 +71,87 @@ export function buaTilKlippu(model, nafn, lengd, hreyfingar) {
 }
 
 
-// ==================== ANAKIN ====================
+// ==================== ANAKIN: HÆGRI HÖND OG FINGUR ====================
 
 const A = 'ValveBipedBip01_';
-const H = Math.PI;   // hálfur hringur: fótur sem er í fasa H hreyfist á móti hinum
 
-// hægri höndin heldur á sverðinu í varnarstöðu (vorn) eða heggur (hogg). Hinar hreyfingarnar snerta hana ekki,
-// svo hægt er að ganga og höggva á sama tíma.
+// Fingurnir vísa út eftir handleggnum (+z hægra megin, -z vinstra megin) og lófinn snýr niður,
+// svo snúningur um x kreppir þá. Hægri höndin kreppist fast utan um skaftið, sú vinstri slakar.
+function fingur(hlid, krepping) {
+  const formerki = hlid === 'R' ? 1 : -1;
+  const listi = [];
+  const nofn = hlid === 'R'
+    ? [['018', '019', '020'], ['021', '022', '023'], ['024', '025', '026'], ['027', '028', '029']]
+    : [['037', '038', '039'], ['040', '041', '042'], ['043', '044', '045'], ['046', '047', '048']];
+  nofn.forEach((liðir, f) => {
+    const fingurNr = 4 - f;   // Finger4 (litli) … Finger1 (vísifingur)
+    liðir.forEach((nr, lidur) => {
+      const nafn = `${A}${hlid}_Finger${fingurNr}${lidur === 0 ? '' : lidur}_${nr}`;
+      listi.push({ bein: nafn, as: 'x', midja: formerki * krepping });
+    });
+  });
+  // þumallinn
+  const thumall = hlid === 'R' ? ['030', '031', '032'] : ['049', '050', '051'];
+  thumall.forEach((nr, lidur) => {
+    listi.push({ bein: `${A}${hlid}_Finger0${lidur === 0 ? '' : lidur}_${nr}`, as: 'x', midja: formerki * krepping * 0.5 });
+  });
+  return listi;
+}
+
+const FINGUR = [...fingur('R', 65), ...fingur('L', 20)];
+
+// varnarstaða: höndin fyrir framan beltið, sverðið upp á ská
 const VORN = [
   { bein: A + 'R_UpperArm_015', as: 'x', midja: 82 },   // hönd niður með síðunni
   { bein: A + 'R_UpperArm_015', as: 'z', midja: 20 },   // og aðeins fram
-  { bein: A + 'R_Forearm_016', as: 'y', midja: 65 },    // olnbogi beygður svo höndin er fyrir framan beltið
+  { bein: A + 'R_Forearm_016', as: 'y', midja: 65 },    // olnbogi beygður
+  ...FINGUR,
 ];
-
-function vinstriHondNidur(sveifla, fasi) {
-  return [
-    { bein: A + 'L_UpperArm_034', as: 'x', midja: -72 },
-    { bein: A + 'L_UpperArm_034', as: 'z', midja: 0, sveifla, fasi },
-    { bein: A + 'L_Forearm_035', as: 'y', midja: -15 },
-  ];
-}
-
-function faetur(laeri, hne) {
-  return [
-    { bein: A + 'R_Thigh_052', as: 'z', sveifla: laeri },
-    { bein: A + 'L_Thigh_055', as: 'z', sveifla: laeri, fasi: H },
-    // hnéð beygist bara aftur, mest þegar fóturinn er á leið fram
-    { bein: A + 'R_Calf_053', as: 'z', midja: -hne, sveifla: -hne, fasi: H / 2 },
-    { bein: A + 'L_Calf_056', as: 'z', midja: -hne, sveifla: -hne, fasi: H / 2 + H },
-  ];
-}
 
 export function anakinKlippur(model) {
   return {
-    kyrr: buaTilKlippu(model, 'Idle', 3, [
-      ...vinstriHondNidur(0, 0),
-      { bein: A + 'Spine2_04', as: 'z', sveifla: 1.5 },   // andar rólega
-      { bein: A + 'Head1_07', as: 'y', sveifla: 4 },      // lítur aðeins í kringum sig
-    ]),
-    ganga: buaTilKlippu(model, 'Walk', 1.1, [
-      ...faetur(24, 18),
-      ...vinstriHondNidur(-18, 0),
-      { bein: A + 'Spine2_04', as: 'y', sveifla: 4 },
-    ]),
-    hlaupa: buaTilKlippu(model, 'Run', 0.62, [
-      ...faetur(36, 30),
-      ...vinstriHondNidur(-35, 0),
-      { bein: A + 'L_Forearm_035', as: 'y', midja: -50 },
-      { bein: A + 'Spine1_03', as: 'z', midja: -10 },      // hallar sér fram
-      { bein: A + 'Spine2_04', as: 'y', sveifla: 7 },
-    ]),
     vorn: buaTilKlippu(model, 'Guard', 1, VORN),
     // lyfta sverðinu yfir öxlina, höggva niður á ská og aftur í vörn
     hogg: buaTilKlippu(model, 'Swing', 0.5, [
       { bein: A + 'R_UpperArm_015', as: 'x', lyklar: [82, 15, 60, 82] },
       { bein: A + 'R_UpperArm_015', as: 'z', lyklar: [20, 100, 55, 20] },
       { bein: A + 'R_Forearm_016', as: 'y', lyklar: [65, 110, 10, 65] },
-      { bein: A + 'Spine2_04', as: 'y', lyklar: [0, 25, -30, 0] },
+      ...FINGUR,
+    ]),
+    // snögg hreyfing þegar skot er slegið til baka: sverðinu sveiflað út og aftur
+    verja: buaTilKlippu(model, 'Parry', 0.3, [
+      { bein: A + 'R_UpperArm_015', as: 'x', lyklar: [82, 55, 82] },
+      { bein: A + 'R_UpperArm_015', as: 'z', lyklar: [20, 55, 20] },
+      { bein: A + 'R_Forearm_016', as: 'y', lyklar: [65, 30, 65] },
+      ...FINGUR,
     ]),
   };
 }
 
 
-// ==================== B1 BATTLE DROID ====================
+// ==================== B1 BATTLE DROID: HENDUR SEM MIÐA ====================
 
-const VINSTRI_LAERI = 'Bone002_024';
-const HAEGRI_LAERI = 'Bone022_027';
-const VINSTRA_HNE = 'Bone003_025';
-const HAEGRA_HNE = 'Bone023_028';
-const VINSTRI_OXL = 'Bone012_09';
-const HAEGRI_OXL = 'Bone026_017';
-const VINSTRI_OLNBOGI = 'Bone013_010';
-const HAEGRI_OLNBOGI = 'Bone027_018';
+export const B1_HAEGRI_HOND = 'Bone028_019';
 
-// báðar hendur fram eins og droidinn haldi á byssu
-const MIDA = [
-  { bein: HAEGRI_OXL, as: 'z', midja: 70 },
-  { bein: VINSTRI_OXL, as: 'z', midja: 60 },
-  { bein: VINSTRI_OXL, as: 'x', midja: 20 },
-  { bein: HAEGRI_OLNBOGI, as: 'z', midja: 15 },
-  { bein: VINSTRI_OLNBOGI, as: 'z', midja: 35 },
-];
-
+// báðar hendur fram eins og droidinn haldi á byssu, með smá titringi
 export function droidKlippur(model) {
   return {
-    ganga: buaTilKlippu(model, 'March', 0.9, [
-      ...MIDA,
-      { bein: HAEGRI_LAERI, as: 'z', sveifla: 22 },
-      { bein: VINSTRI_LAERI, as: 'z', sveifla: 22, fasi: H },
-      { bein: HAEGRA_HNE, as: 'z', midja: -15, sveifla: -15, fasi: H / 2 },
-      { bein: VINSTRA_HNE, as: 'z', midja: -15, sveifla: -15, fasi: H / 2 + H },
-    ]),
     mida: buaTilKlippu(model, 'Aim', 2, [
-      ...MIDA,
-      { bein: HAEGRI_OXL, as: 'y', sveifla: 3 },   // smá titringur
+      { bein: 'Bone026_017', as: 'z', midja: 70, sveifla: 2 },   // hægri öxl
+      { bein: 'Bone012_09', as: 'z', midja: 60 },                // vinstri öxl
+      { bein: 'Bone012_09', as: 'x', midja: 20 },
+      { bein: 'Bone027_018', as: 'z', midja: 15 },               // hægri olnbogi
+      { bein: 'Bone013_010', as: 'z', midja: 35 },               // vinstri olnbogi
+    ]),
+    // á vakt: byssan vísar á ská niður og höfuðið skimar hægt til hliðanna (6 sek)
+    vakt: buaTilKlippu(model, 'Sentry', 6, [
+      { bein: 'Bone026_017', as: 'z', midja: 35 },
+      { bein: 'Bone012_09', as: 'z', midja: 30 },
+      { bein: 'Bone012_09', as: 'x', midja: 15 },
+      { bein: 'Bone027_018', as: 'z', midja: 45 },
+      { bein: 'Bone013_010', as: 'z', midja: 60 },
+      { bein: 'Bone010_07', as: 'y', sveifla: 60 },               // lítur til vinstri og hægri
+      { bein: 'Bone010_07', as: 'z', sveifla: 10, fasi: 1 },      // og aðeins upp og niður
     ]),
   };
 }
