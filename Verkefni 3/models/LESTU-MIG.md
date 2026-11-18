@@ -63,3 +63,17 @@ X-wing og TIE Fighter hlaðast sjálfkrafa samkvæmt skránöfnunum hér að ofa
 | `quaternius/knight-character.glb` | Beinagrind með 12 hreyfingum, þar á meðal kyrrstöðu með sverði, hlaupi og tveimur sverðshöggum. Hreyfingarnar þarf að færa yfir á Anakin. | Quaternius, CC0 1.0, [Animated Knight Pack og leyfi](https://github.com/trebeljahr/quaternius-showcase/blob/0128ca510d653bb04d6d1e4885bd8890b5050b4f/LICENSES.md) |
 | `kaykit/landingpad_large.glb` | Lendingarpallur, pakkaður úr glTF í GLB. | Kay Lousberg, [CC0 1.0](kaykit/License.txt), [Space Base Bits 1.0](https://github.com/KayKit-Game-Assets/KayKit-Space-Base-Bits-1.0/tree/6dfbcac9927d06283752c4defd4882cfe0d29666) |
 | `ldraw/dooku-lightsaber.glb` | Rautt geislasverð Dooku í stíl mínífígúru, fært úr LDraw í GLB og skalað. Blaðið er rautt og lýsandi. | Massimo Maso, Tim Gould, Steve Bliss, Alex Taylor, James Jessiman og Donald Sutter, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), [hlutar og höfundar](ldraw/dooku-credits.json), [frumskrá](https://github.com/ldraw-org/official-library/blob/894bbba5e696b1554800d8e45134c57163dba905/ldraw/parts/42114c01.dat) |
+
+## Þjöppun nýju módelanna
+
+Til að leikurinn hlæðist hraðar voru þessi módel þjöppuð með gltf-transform (meshopt + quantization). Útlitið er það sama, en GLTFLoader þarf `MeshoptDecoder`.
+
+| Skrá | Fyrir | Eftir |
+| --- | --- | --- |
+| `skip.glb` (X-wing) | 11,8 MB | 5,6 MB |
+| `tie.glb` | 2,7 MB | 0,7 MB |
+| `geimur/tie-interceptor.glb` (auka hlutinn `light4` úr flugsveitinni fjarlægður) | 2,4 MB | 0,5 MB |
+| `geimur/tie-bomber.glb` | 4,9 MB | 0,9 MB |
+| `geimur/star-destroyer.glb` (áferðir 1024 px) | 6,1 MB | 2,7 MB |
+| `loftsteinar/*.glb` (einfaldaðir í ~2500 þríhyrninga) | 2,2 MB | 0,04 MB |
+| `geimur/tycho-star-map.jpg` (endurþjappað) | 4,0 MB | 0,75 MB |

@@ -182,6 +182,10 @@ scene
 - **`hoggHittir()`**: kallað 200 ms eftir að höggið byrjar. Droid sem er nær en 2,4 m og fyrir framan Anakin dettur (`sigra()`).
 - „Reyna aftur“ kallar á `stillaUppDroidum()` svo allir standi aftur.
 
+### MÓDEL Í FLUGSKÝLINU
+- `setjaUppHlut(slod, x, z, staerd, snuningur)` hleður módeli, skalar það svo lengsta hliðin verði `staerd` m, setur það á gólfið og bætir `Box3` í `kassar` fyrir árekstra. Svona eru lendingarpallurinn, tölvurnar, rafallinn, rörin, kassinn, tunnurnar og eldsneytisbrúsarnir settir inn.
+- Sum módelin eru þjöppuð með **meshopt** svo þau hlaðist hraðar. `gltfLoader.setMeshoptDecoder(MeshoptDecoder)` gerir GLTFLoader kleift að lesa þau.
+
 ### SKIPIÐ Í FLUGSKÝLINU, UM BORÐ OG FLUGTAK
 - `skyliSkip` stendur á lendingarfótum og vísar út um opið. `skipKassi` (`Box3`) er bæði árekstur og svæðið þar sem **Fara um borð** birtist.
 - **`faraUmBord()`** er `async` fall. anime.js hreyfingar eru „thenable“, svo `await animate(...)` bíður þar til hreyfingin klárast: dökkna → fela Anakin og R2 → lýsa → skipið lyftist → flýgur út → dökkna → skipta yfir í geiminn → lýsa.
@@ -210,7 +214,11 @@ scene
 - **TIE gervigreind (`uppfaeraTie()`):** tvær stöður. *atak:* fljúga að skipinu og skjóta ef það er beint fyrir framan (með smá skekkju). *forda:* ef nær en 40 m, fljúga burt í handahófskennda átt í 2–3,5 sek. `quaternion.rotateTowards()` takmarkar hversu hratt hún getur beygt.
 - **Sprengingar:** blossi (kúla sem stækkar og dofnar) og brak sem flýgur út og snýst, allt með anime.js.
 - **Merki á skjánum:** staða hverrar TIE er varpað á skjáinn með `.project(myndavel)`. Ef hún er fyrir aftan eða utan skjás birtist ör við jaðarinn.
-- **Bylgjur:** bylgja *n* hefur 2 + *n* TIE flaugar sem birtast 380 m fyrir framan skipið.
+- **Þrjár gerðir af TIE** í `TIE_GERDIR`: venjuleg TIE, Interceptor (hraðari, beygir krappar) og Bomber (hægur, 6 líf). `BYLGJUR` segir hvaða flaugar eru í hverri af 5 bylgjunum. Þær birtast hjá Star Destroyernum og fljúga þaðan að skipinu.
+- **Stórir hlutir:** Star Destroyer, geimstöðin og Dauðastjarnan eru hlaðnir með `hladaStorum()`. Hver fær nokkrar árekstrarkúlur (`storirHlutir`), svo skipið skoppar af þeim.
+- **Bakgrunnur:** stjörnukort NASA er `sena.background` með `EquirectangularReflectionMapping` (allur himinninn í einni mynd).
+- **Loftsteinar:** íkosahedrarnir fá lögun NASA loftsteinanna (Bennu, Eros, Itokawa) þegar þær hafa hlaðist: `geometry.center()`, skalað í radíus 1 og `computeVertexNormals()`.
+- **Sprengingar:** Kenney myndin hefur 8 reiti (4 x 2). Hver reitur er afrit af áferðinni með `repeat` (0,25, 0,5) og `offset` sem velur reitinn. Glampi, tveir eldar og reykur eru `Sprite` sem stækka og dofna með anime.js.
 
 ---
 

@@ -6,21 +6,30 @@ import { animate, utils } from 'animejs';
 
 // Módel skipsins og TIE flauganna. Ef skrárnar eru ekki til eru einföld líkön úr grunnformum notuð.
 export const SKIP_SLOD = 'models/skip.glb';
-export const TIE_SLOD = 'models/tie.glb';
 export const SKIP_SNUNINGUR = 0;   // ef skip.glb vísar ekki fram (+z): prófaðu Math.PI eða ±Math.PI / 2
-const TIE_SNUNINGUR = 0;
 export const SKIP_LENGD = 8;       // metrar
-const TIE_LENGD = 6;
+
+// þrjár gerðir af TIE flaugum. snuningur: sum módel vísa aftur (-z) og þarf að snúa við
+const TIE_GERDIR = {
+  tie: { slod: 'models/tie.glb', lengd: 6, snuningur: 0, hradi: 36, beygja: 1.1, lif: 2, radius: 3.5 },
+  interceptor: { slod: 'models/geimur/tie-interceptor.glb', lengd: 6.5, snuningur: Math.PI, hradi: 50, beygja: 1.6, lif: 2, radius: 3.5 },
+  bomber: { slod: 'models/geimur/tie-bomber.glb', lengd: 9, snuningur: 0, hradi: 24, beygja: 0.7, lif: 6, radius: 5 },
+};
+// hvaða flaugar eru í hverri bylgju
+const BYLGJUR = [
+  ['tie', 'tie', 'tie'],
+  ['tie', 'tie', 'tie', 'tie'],
+  ['tie', 'tie', 'interceptor', 'interceptor'],
+  ['tie', 'interceptor', 'interceptor', 'bomber', 'bomber'],
+  ['tie', 'tie', 'interceptor', 'interceptor', 'interceptor', 'bomber', 'bomber'],
+];
 
 const GRUNNHRADI = 34;             // m/s
 const HRADAUKNING = 75;            // m/s með Shift / Hraði takkanum
 const BEYGJA = 1.5;                // rad/s til hliðar
 const HALLI = 1.2;                 // rad/s upp/niður
 const SKOT_HRADI = 240;
-const TIE_HRADI = 36;
-const TIE_BEYGJA = 1.1;            // rad/s
 const HEIMSMORK = 700;             // lengra en þetta frá miðju og skipið snýr sjálft við
-const BYLGJUR = 5;
 
 const Z_AS = new THREE.Vector3(0, 0, 1);
 
@@ -164,7 +173,7 @@ export function buaTilStjornur(fjoldi, radius) {
 
 // ==================== GEIMURINN ====================
 
-export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meidast, fekkStig, sigur, erLokid }) {
+export function buaTilGeimsins({ gltfLoader, textureLoader, audioLoader, listener, spila, meidast, fekkStig, sigur, erLokid }) {
   const sena = new THREE.Scene();
   sena.background = new THREE.Color(0x000003);
 
@@ -176,12 +185,20 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
   sol.position.set(-600, 300, 400);
   sena.add(sol);
 
-  sena.add(buaTilStjornur(6000, 2500));
+  // stjörnukort NASA sem bakgrunnur (equirectangular: allur himinninn í einni mynd)
+  textureLoader.load('models/geimur/tycho-star-map.jpg', (kort) => {
+    kort.mapping = THREE.EquirectangularReflectionMapping;
+    kort.colorSpace = THREE.SRGBColorSpace;
+    sena.background = kort;
+    sena.backgroundIntensity = 0.6;
+  });
+  sena.add(buaTilStjornur(2500, 2500));
 
   // stjörnuþokur: stórar, gegnsæjar myndir (Sprite) sem snúa alltaf að myndavélinni
-  for (const [litur, x, y, z, s] of [['#5a2a8a', -1400, 400, -1800, 2200], ['#1a5a7a', 1600, -300, -1200, 1800], ['#7a2a4a', 600, 900, 1800, 2000]]) {
+  for (const [litur, x, y, z, s] of [['#5a2a8a', -1400, 400, -1800, 2200], ['#1a5a7a', 1600, -300, -1200, 1800]]) {
     const thoka = new THREE.Sprite(new THREE.SpriteMaterial({ map: blettur(litur), blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.6, fog: false }));
     thoka.position.set(x, y, z);
+    thoka.material.opacity = 0.35;
     thoka.scale.setScalar(s);
     sena.add(thoka);
   }
@@ -197,10 +214,44 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
   planeta.add(lofthjupur);
   sena.add(planeta);
   animate(planeta, { rotateY: 360, duration: 600000, loop: true, ease: 'linear' });
+  // Mars módelið (NASA áferð) kemur í stað plánetunnar sem er teiknuð í kóða
+  gltfLoader.load('models/geimur/mars.glb', (gltf) => {
+    const mars = gltf.scene;
+    iMidju(mars, 1400);
+    planeta.material.visible = false;
+    planeta.add(mars);
+    lofthjupur.material.color.set(0xff9060);
+  });
+
+  // stórir hlutir sem ekki má fljúga í gegnum: { midja, radius }
+  const storirHlutir = [];
+
+  function hladaStorum(slod, lengd, stada, snuningur, kulur) {
+    gltfLoader.load(slod, (gltf) => {
+      const model = gltf.scene;
+      iMidju(model, lengd);
+      const hopur = new THREE.Group();
+      hopur.add(model);
+      hopur.position.copy(stada);
+      hopur.rotation.y = snuningur;
+      sena.add(hopur);
+      hopur.updateMatrixWorld(true);
+      // árekstrar: nokkrar kúlur eftir lengd hlutarins (í hnitum hans)
+      for (const [z, r] of kulur) storirHlutir.push({ midja: hopur.localToWorld(new THREE.Vector3(0, 0, z * lengd)), radius: r * lengd });
+    });
+  }
+
+  // Star Destroyer: TIE flaugarnar koma frá honum. Módelið vísar aftur (-z), því er snúið um PI
+  const STAR_DESTROYER = new THREE.Vector3(-350, 60, -650);
+  hladaStorum('models/geimur/star-destroyer.glb', 600, STAR_DESTROYER, Math.PI * 0.85, [[-0.3, 0.12], [0, 0.18], [0.3, 0.12]]);
+  // geimstöðin sem flugskýlið er í: skipið byrjar rétt hjá henni
+  hladaStorum('models/geimur/geimstod.glb', 220, new THREE.Vector3(0, -30, 340), 0, [[0, 0.3]]);
+  // Dauðastjarnan langt í burtu
+  hladaStorum('models/geimur/death-star.glb', 450, new THREE.Vector3(-1700, 350, 1500), 2.4, [[0, 0.5]]);
 
   // loftsteinar: íkosahedra þar sem hver hornpunktur er færður aðeins til, svo þeir verði óreglulegir
   const loftsteinar = [];
-  const steinEfni = new THREE.MeshStandardMaterial({ color: 0x6b6258, roughness: 0.95, metalness: 0.05, flatShading: true });
+  const steinEfni = new THREE.MeshStandardMaterial({ color: 0x6b6258, roughness: 0.95, metalness: 0.05 });
   const steinLogun = [];
   for (let i = 0; i < 5; i++) {
     const g = mergeVertices(new THREE.IcosahedronGeometry(1, 1));
@@ -212,7 +263,7 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
     g.computeVertexNormals();
     steinLogun.push(g);
   }
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 45; i++) {
     const steinn = new THREE.Mesh(steinLogun[i % 5], steinEfni);
     const radius = utils.random(3, 20, 1);
     steinn.scale.setScalar(radius);
@@ -222,6 +273,23 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
     sena.add(steinn);
     loftsteinar.push({ steinn, radius, snuningur: new THREE.Vector3(utils.random(-0.3, 0.3, 2), utils.random(-0.3, 0.3, 2), 0) });
   }
+
+  // NASA loftsteinarnir (Bennu, Eros, Itokawa) koma í stað íkosahedranna þegar þeir hafa hlaðist
+  ['bennu', 'eros', 'itokawa'].forEach((nafn, i) => {
+    gltfLoader.load(`models/loftsteinar/${nafn}.glb`, (gltf) => {
+      let logun = null;
+      gltf.scene.traverse((h) => {
+        if (h.isMesh && !logun) logun = h.geometry.clone();
+      });
+      logun.center();
+      logun.computeBoundingSphere();
+      logun.scale(1 / logun.boundingSphere.radius, 1 / logun.boundingSphere.radius, 1 / logun.boundingSphere.radius);
+      logun.computeVertexNormals();
+      loftsteinar.forEach((l, j) => {
+        if (j % 3 === i) l.steinn.geometry = logun;
+      });
+    });
+  });
 
   // geimryk nálægt skipinu: gefur tilfinningu fyrir hraða þó geimurinn sé tómur
   const RYK = 60;
@@ -247,9 +315,14 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
     skipHalli.add(skipLikan);
   }
 
-  // ---------- TIE módelið ----------
-  let tieSnidmat = buaTilTieLikan();
-  hladaModeli(gltfLoader, TIE_SLOD, TIE_LENGD, TIE_SNUNINGUR, (hopur) => { tieSnidmat = hopur; });
+  // ---------- TIE módelin ----------
+  // einfalda líkanið er notað þar til módelið er komið
+  const tieSnidmat = {};
+  for (const [nafn, gerd] of Object.entries(TIE_GERDIR)) {
+    tieSnidmat[nafn] = buaTilTieLikan();
+    tieSnidmat[nafn].scale.setScalar(gerd.lengd / 6);
+    hladaModeli(gltfLoader, gerd.slod, gerd.lengd, gerd.snuningur, (hopur) => { tieSnidmat[nafn] = hopur; });
+  }
 
   // ---------- hljóð ----------
   const hreyfillHljod = new THREE.Audio(listener);
@@ -393,7 +466,7 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
       // miða þangað sem TIE flaugin verður þegar skotið nær henni
       const timi = mark.hopur.position.distanceTo(byssa) / SKOT_HRADI;
       const framTie = Z_AS.clone().applyQuaternion(mark.hopur.quaternion);
-      att = mark.hopur.position.clone().addScaledVector(framTie, TIE_HRADI * timi).sub(byssa).normalize();
+      att = mark.hopur.position.clone().addScaledVector(framTie, mark.gerd.hradi * timi).sub(byssa).normalize();
     }
     buaTilSkot('leikmadur', byssa, att, rauttSkot, SKOT_HRADI + hradi);
     spila(byssuHljod);
@@ -404,27 +477,26 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
   let bylgja = 0;
   let millibylgja = 0;   // tími þegar næsta bylgja kemur
 
-  function buaTilTie(stada) {
-    const hopur = tieSnidmat.clone();
+  function buaTilTie(stada, gerdNafn) {
+    const gerd = TIE_GERDIR[gerdNafn];
+    const hopur = tieSnidmat[gerdNafn].clone();
     hopur.position.copy(stada);
     hopur.lookAt(skip.position);
     sena.add(hopur);
     const hljod = new THREE.PositionalAudio(listener);
     hljod.setRefDistance(12);
     hopur.add(hljod);
-    tie.push({ hopur, lif: 2, lifandi: true, astand: 'atak', astandTil: 0, fordaAtt: new THREE.Vector3(), naestaSkot: 0, hljod, oskradi: 0 });
+    tie.push({ hopur, gerd, lif: gerd.lif, lifandi: true, astand: 'atak', astandTil: 0, fordaAtt: new THREE.Vector3(), naestaSkot: 0, hljod, oskradi: 0 });
   }
 
   function nyBylgja(nuna) {
     bylgja += 1;
-    const fjoldi = 2 + bylgja;
-    const fram = Z_AS.clone().applyQuaternion(skip.quaternion);
-    for (let i = 0; i < fjoldi; i++) {
-      // birtast í hóp langt fyrir framan skipið
-      const stada = skip.position.clone().addScaledVector(fram, 380).add(new THREE.Vector3().randomDirection().multiplyScalar(80));
-      buaTilTie(stada);
+    // flaugarnar koma frá Star Destroyernum
+    for (const gerdNafn of BYLGJUR[bylgja - 1]) {
+      const stada = STAR_DESTROYER.clone().add(new THREE.Vector3().randomDirection().multiplyScalar(utils.random(60, 120, 0)));
+      buaTilTie(stada, gerdNafn);
     }
-    tilkynna(`Bylgja ${bylgja} af ${BYLGJUR}`);
+    tilkynna(`Bylgja ${bylgja} af ${BYLGJUR.length}`);
     millibylgja = 0;
   }
 
@@ -442,7 +514,7 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
       if (t.astand === 'atak') {
         const framSkips = Z_AS.clone().applyQuaternion(skip.quaternion);
         markAtt = skip.position.clone().addScaledVector(framSkips, hradi * 0.6).sub(p);
-        if (fjarlaegd < 40) {
+        if (fjarlaegd < 40 + t.gerd.radius * 2) {
           t.astand = 'forda';
           t.astandTil = nuna + utils.random(2, 3.5, 2);
           t.fordaAtt.randomDirection().add(tilSkips.clone().normalize().multiplyScalar(-1.5)).normalize();
@@ -455,9 +527,9 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
       // snúa mjúklega í áttina (rotateTowards takmarkar hversu hratt hún getur beygt)
       hjalp.position.copy(p);
       hjalp.lookAt(p.clone().add(markAtt));
-      t.hopur.quaternion.rotateTowards(hjalp.quaternion, TIE_BEYGJA * delta);
+      t.hopur.quaternion.rotateTowards(hjalp.quaternion, t.gerd.beygja * delta);
       const fram = Z_AS.clone().applyQuaternion(t.hopur.quaternion);
-      p.addScaledVector(fram, TIE_HRADI * delta);
+      p.addScaledVector(fram, t.gerd.hradi * delta);
 
       // skjóta ef skipið er beint fyrir framan
       if (t.astand === 'atak' && fjarlaegd < 220 && fram.angleTo(tilSkips) < 0.18 && nuna > t.naestaSkot) {
@@ -487,20 +559,65 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
   const brakLogun = new THREE.BoxGeometry(0.5, 0.5, 0.5);
   const brakEfni = new THREE.MeshStandardMaterial({ color: 0x555a60, emissive: 0xff5010, emissiveIntensity: 1.5 });
 
-  function sprenging(stada, staerd) {
-    const blossi = new THREE.Mesh(blossiLogun, new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffa040).multiplyScalar(6), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-    blossi.position.copy(stada);
-    sena.add(blossi);
-    animate(blossi, {
-      scale: [staerd * 0.3, staerd * 2],
+  // Sprengimyndir (Kenney Particle Pack): 8 reitir á einni mynd, 4 dálkar x 2 raðir.
+  // Hver reitur fær sitt eigið afrit af áferðinni þar sem repeat/offset velja reitinn.
+  const sprengiReitir = {};
+  textureLoader.load('models/geimur/explosion-particles.png', (mynd) => {
+    mynd.colorSpace = THREE.SRGBColorSpace;
+    for (const [nafn, dalkur, rod] of [['eldur', 0, 0], ['eldur2', 1, 0], ['glampi', 2, 0], ['reykur', 3, 1]]) {
+      const reitur = mynd.clone();
+      reitur.repeat.set(0.25, 0.5);
+      reitur.offset.set(dalkur * 0.25, 1 - (rod + 1) * 0.5);   // efsta röðin er efst í myndinni (v nær 1)
+      reitur.needsUpdate = true;
+      sprengiReitir[nafn] = reitur;
+    }
+  });
+
+  // ein mynd (Sprite) sem snýr alltaf að myndavélinni, stækkar og dofnar
+  function sprengiMynd(stada, reitur, litur, fra, til, timi, ljos) {
+    const mynd = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: reitur,
+      color: litur,
+      transparent: true,
+      depthWrite: false,
+      blending: ljos ? THREE.AdditiveBlending : THREE.NormalBlending,
+      rotation: Math.random() * Math.PI * 2,
+    }));
+    mynd.position.copy(stada);
+    sena.add(mynd);
+    animate(mynd, {
+      scale: [fra, til],
       opacity: [1, 0],
-      duration: 700,
-      ease: 'outExpo',
+      duration: timi,
+      ease: 'outQuad',
       onComplete: () => {
-        sena.remove(blossi);
-        blossi.material.dispose();
+        sena.remove(mynd);
+        mynd.material.dispose();
       },
     });
+  }
+
+  function sprenging(stada, staerd) {
+    if (sprengiReitir.eldur) {
+      sprengiMynd(stada, sprengiReitir.glampi, new THREE.Color(0xffffff).multiplyScalar(6), staerd * 2, staerd * 6, 250, true);
+      sprengiMynd(stada, sprengiReitir.eldur, new THREE.Color(0xff8a30).multiplyScalar(4), staerd, staerd * 4, 700, true);
+      sprengiMynd(stada, sprengiReitir.eldur2, new THREE.Color(0xffc060).multiplyScalar(3), staerd * 0.5, staerd * 3, 500, true);
+      sprengiMynd(stada, sprengiReitir.reykur, new THREE.Color(0x3a3a40), staerd, staerd * 5, 1800, false);
+    } else {
+      const blossi = new THREE.Mesh(blossiLogun, new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffa040).multiplyScalar(6), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+      blossi.position.copy(stada);
+      sena.add(blossi);
+      animate(blossi, {
+        scale: [staerd * 0.3, staerd * 2],
+        opacity: [1, 0],
+        duration: 700,
+        ease: 'outExpo',
+        onComplete: () => {
+          sena.remove(blossi);
+          blossi.material.dispose();
+        },
+      });
+    }
     for (let i = 0; i < 14; i++) {
       const brak = new THREE.Mesh(brakLogun, brakEfni);
       brak.position.copy(stada);
@@ -545,12 +662,12 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
 
       if (s.fra === 'leikmadur') {
         for (const t of tie) {
-          if (t.lifandi && nalaegt(t.hopur.position, 3.5)) {
+          if (t.lifandi && nalaegt(t.hopur.position, t.gerd.radius)) {
             burt = true;
             t.lif -= 1;
             if (t.lif <= 0) {
               t.lifandi = false;
-              sprenging(t.hopur.position.clone(), 3);
+              sprenging(t.hopur.position.clone(), t.gerd.radius);
               sena.remove(t.hopur);
               fekkStig();
             } else {
@@ -658,6 +775,17 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
 
     if (takkar.has('Space') || skjotaHaldid) skjotaLeikmadur(nuna);
 
+    // árekstur við stóra hluti (Star Destroyer, geimstöð, Dauðastjörnu)
+    for (const h of storirHlutir) {
+      if (nuna > naestiArekstur && skip.position.distanceTo(h.midja) < h.radius) {
+        naestiArekstur = nuna + 1;
+        meidast(15);
+        hristingur = 1;
+        sprenging(skip.position.clone().addScaledVector(fram, 4), 1.5);
+        skip.position.addScaledVector(h.midja.clone().sub(skip.position).normalize(), -12);   // ýtt burt
+      }
+    }
+
     // árekstur við loftstein
     for (const l of loftsteinar) {
       if (nuna > naestiArekstur && skip.position.distanceTo(l.steinn.position) < l.radius + 2.5) {
@@ -693,7 +821,7 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
     }
     p.needsUpdate = true;
 
-    geimTexti.textContent = `Hraði ${Math.round(hradi * 3.6)} km/klst · Bylgja ${bylgja}/${BYLGJUR} · TIE eftir: ${tie.filter((t) => t.lifandi).length}`;
+    geimTexti.textContent = `Hraði ${Math.round(hradi * 3.6)} km/klst · Bylgja ${bylgja}/${BYLGJUR.length} · TIE eftir: ${tie.filter((t) => t.lifandi).length}`;
   }
 
   // ---------- opinbert viðmót ----------
@@ -706,8 +834,8 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
     byrja() {
       virkt = true;
       hud.hidden = false;
-      skip.position.set(0, 0, 200);
-      skip.rotation.set(0, Math.PI, 0);   // snýr inn að miðjunni
+      skip.position.set(0, 0, 230);       // rétt fyrir framan geimstöðina
+      skip.rotation.set(0, Math.PI, 0);   // snýr inn að miðjunni, þar sem barist er
       skip.updateMatrixWorld();
       myndavel.position.copy(skip.localToWorld(new THREE.Vector3(0, 3, -12)));
       bylgja = 0;
@@ -743,7 +871,7 @@ export function buaTilGeimsins({ gltfLoader, audioLoader, listener, spila, meida
         if (tie.length === 0) {
           if (millibylgja === 0) millibylgja = nuna + 3;
           if (nuna > millibylgja) {
-            if (bylgja >= BYLGJUR) {
+            if (bylgja >= BYLGJUR.length) {
               virkt = false;
               sigur();
             } else {

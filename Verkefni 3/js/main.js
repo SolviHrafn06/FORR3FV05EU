@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -96,6 +97,7 @@ const leidbeiningar = document.querySelector('.leidbeiningar');
 // allir loaderar fá sama manager svo hann viti hvenær ALLT er komið
 const manager = new THREE.LoadingManager();
 const gltfLoader = new GLTFLoader(manager);
+gltfLoader.setMeshoptDecoder(MeshoptDecoder);   // sum módelin eru þjöppuð með meshopt svo þau hlaðist hraðar
 const textureLoader = new THREE.TextureLoader(manager);
 const audioLoader = new THREE.AudioLoader(manager);
 
@@ -355,6 +357,59 @@ gltfLoader.load('models/millennium_falcon.glb', (gltf) => {
     if (h.isMesh) h.material = holoEfni;   // allt skipið fær sama gegnsæja bláa efnið
   });
   holoHaldari.add(falki);
+});
+
+
+// ==================== MÓDEL Í FLUGSKÝLINU ====================
+
+// setur módel á gólfið: lengsta hliðin verður 'staerd' metrar, botninn á y = 0 og árekstrarkassi bætist við
+function setjaUppHlut(slod, x, z, staerd, snuningur = 0, arekstur = true) {
+  gltfLoader.load(slod, (gltf) => {
+    const hlutur = gltf.scene;
+    hlutur.updateMatrixWorld(true);
+    const kassi = new THREE.Box3().setFromObject(hlutur);
+    const st = kassi.getSize(new THREE.Vector3());
+    const midja = kassi.getCenter(new THREE.Vector3());
+    const s = staerd / Math.max(st.x, st.y, st.z);
+    hlutur.scale.multiplyScalar(s);
+    hlutur.position.set(-midja.x * s, -kassi.min.y * s, -midja.z * s);
+    hlutur.traverse((h) => {
+      if (h.isMesh) {
+        h.castShadow = true;
+        h.receiveShadow = true;
+      }
+    });
+    const hopur = new THREE.Group();
+    hopur.add(hlutur);
+    hopur.position.set(x, 0, z);
+    hopur.rotation.y = snuningur;
+    scene.add(hopur);
+    if (arekstur) {
+      hopur.updateMatrixWorld(true);
+      kassar.push(new THREE.Box3().setFromObject(hopur));
+    }
+  });
+}
+
+setjaUppHlut('models/kaykit/landingpad_large.glb', 5.6, 0, 7.5, 0, false);           // lendingarpallur undir skipinu
+setjaUppHlut('models/smithmaps/prop_comp.gltf', 4.3, -9.5, 3.2);                      // tölvur fyrir aftan droidana
+setjaUppHlut('models/smithmaps/prop_green_tubes.gltf', 8.5, 7.6, 2.6);
+setjaUppHlut('models/smithmaps/prop_coffin_crate.gltf', -2.4, 8.9, 2, 0.3);
+setjaUppHlut('models/smithmaps/prop_gas_can.gltf', 2.5, 5.2, 0.7);
+setjaUppHlut('models/smithmaps/prop_gas_can.gltf', 3.2, 5.7, 0.7, 1);
+setjaUppHlut('models/kenney/machine_generatorLarge.glb', -8.6, -4.2, 2.2, Math.PI / 2);
+setjaUppHlut('models/kenney/desk_computerCorner.glb', -8.5, 3.4, 2.2, Math.PI / 2);
+setjaUppHlut('models/kenney/barrels_rail.glb', -5.6, 8.9, 1.5);
+
+// pallurinn undir heilmyndinni kemur í stað sívalninganna
+gltfLoader.load('models/quaternius/holobord-grunnur.glb', (gltf) => {
+  const pallur = gltf.scene;
+  setjaIRettanSkala(pallur, 0.95);
+  pallur.traverse((h) => {
+    if (h.isMesh) h.castShadow = true;
+  });
+  bordFotur.visible = false;
+  holoBord.add(pallur);
 });
 
 
@@ -692,7 +747,15 @@ gltfLoader.load('models/minn-hlutur.glb', (gltf) => {
     }
   });
   hlutHaldari.add(hlutur);
-}, undefined, () => console.warn('Settu skannaða hlutinn í models/minn-hlutur.glb'));
+}, undefined, () => {
+  // þar til skannaði hluturinn er kominn: rauða geislasverð Dooku á stallinum
+  console.warn('Settu skannaða hlutinn í models/minn-hlutur.glb');
+  gltfLoader.load('models/ldraw/dooku-lightsaber.glb', (gltf) => {
+    const sverd = gltf.scene;
+    setjaIRettanSkala(sverd, 0.9);
+    hlutHaldari.add(sverd);
+  });
+});
 
 
 // ==================== STAR WARS MERKIÐ ====================
@@ -866,6 +929,7 @@ function spila(hljod) {
 let tieSigradar = 0;
 const geimur = buaTilGeimsins({
   gltfLoader,
+  textureLoader,
   audioLoader,
   listener,
   spila,

@@ -54,6 +54,10 @@ Three.js 0.187.0 og Anime.js 4.5.0 (með Three.js adapter) eru sótt af CDN (jsd
 - **Millennium Falcon** eftir fredbear1211
 - **Star Wars Logo** eftir David Tena C.
 - **Star Wars R2-D2** eftir tegnemaskin
+- **X-wing** (skipið) eftir charles.woods, **TIE Fighter** eftir Ilyas.King, **TIE Interceptor** eftir Pixel, **TIE Bomber** eftir Daniel, **Star Destroyer** eftir rubaun, **geimstöð** eftir Liberi Arcano (öll CC-BY-4.0)
+- **Dauðastjarnan** eftir Erik Nordeus (MIT), **Mars, loftsteinar og stjörnukort** frá NASA 3D Resources
+- **Hlutir í flugskýlinu** frá Kenney, Quaternius, KayKit og SmithMaps (CC0), **sverð Dooku** úr LDraw (CC-BY-4.0)
+- Nánar um hvert módel: [models/LESTU-MIG.md](models/LESTU-MIG.md)
 - **Hreyfingar (idle, walk, run):** af Xbot módelinu í dæmum [three.js](https://github.com/mrdoob/three.js) (hreyfiföngun frá Mixamo), fluttar yfir á Anakin og B1 með `verkfaeri/flytja-hreyfingar.html`
 - **Minn hlutur:** *(hvaða hlut þú ljósmyndaðir og hvaða gervigreindartól breytti myndinni í .glb)*
 - **Hljóð og áferðir:** búin til í kóða með `verkfaeri/bua_til_hljod_og_aferdir.py` (sínusbylgjur og suð með numpy), ekkert sótt af netinu.
