@@ -30,7 +30,6 @@ const DROID_HAED = 1.9;
 const DROID_HRADI = 1.4;
 const SKOT_HRADI = 14;
 const MORK = HALFT_HERBERGI - ANAKIN_RADIUS;   // lengst sem Anakin kemst að veggnum
-const DROIDAR_TIL_AD_OPNA = 5;   // hversu marga droida þarf að sigra áður en skipið opnast
 
 
 // ==================== RENDERER, SENA OG MYNDAVÉL ====================
@@ -574,7 +573,7 @@ Promise.all([gltfLoader.loadAsync('models/anakin_skywalker__battlefront_ii/scene
   virkHreyfing = hreyfingar.kyrr;
   virkHreyfing.play();
 
-  // hægri höndin og fingurnir eru sér: þeir halda sverðinu í vörn, höggva eða verja skot
+  // hægri höndin og fingurnir eru sér: þeir halda sverðinu í vörn eða höggva
   hreyfingar.vorn = mixer.clipAction(klippur.vorn);
   hreyfingar.vorn.play();
   for (const nafn of ['hogg', 'verja']) {
@@ -821,17 +820,16 @@ const umhverfisHljod = new THREE.Audio(listener);              // heyrist alls s
 const sverdHljod = new THREE.PositionalAudio(listener);        // 3D hljóð sem fylgja hlutunum sínum
 const kveikjaHljod = new THREE.PositionalAudio(listener);
 const sveifluHljod = new THREE.PositionalAudio(listener);
-const endurkastHljod = new THREE.PositionalAudio(listener);
 const droidHljod = new THREE.PositionalAudio(listener);
 const hurdHljod = new THREE.PositionalAudio(listener);
 const r2Hljod = new THREE.PositionalAudio(listener);
 
-geislasverd.add(sverdHljod, kveikjaHljod, sveifluHljod, endurkastHljod);
+geislasverd.add(sverdHljod, kveikjaHljod, sveifluHljod);
 droid.add(droidHljod);
 hurd.add(hurdHljod);
 r2.add(r2Hljod);
 r2Hljod.setRefDistance(2);
-for (const hljod of [sverdHljod, kveikjaHljod, sveifluHljod, endurkastHljod]) hljod.setRefDistance(6);
+for (const hljod of [sverdHljod, kveikjaHljod, sveifluHljod]) hljod.setRefDistance(6);
 droidHljod.setRefDistance(1.5);
 hurdHljod.setRefDistance(3);
 
@@ -847,14 +845,12 @@ hladaHljodi(umhverfisHljod, 'hljod/umhverfi.mp3', true, 0.45);
 hladaHljodi(sverdHljod, 'hljod/sverd.mp3', true, 0.5);
 hladaHljodi(kveikjaHljod, 'hljod/kveikja.mp3', false, 0.8);
 hladaHljodi(sveifluHljod, 'hljod/sveifla.mp3', false, 0.9);
-hladaHljodi(endurkastHljod, 'hljod/endurkast.mp3', false, 0.9);
 hladaHljodi(droidHljod, 'hljod/droid.mp3', true, 1);
 hladaHljodi(hurdHljod, 'hljod/hurd.mp3', false, 1);
 hladaHljodi(r2Hljod, 'hljod/r2.mp3', false, 0.8);
 
 // hljóð battle droidanna: hver droid fær sitt eigið PositionalAudio en þeir deila sömu bufferunum
 const bufferar = {};
-audioLoader.load('hljod/blaster.mp3', (b) => { bufferar.blaster = b; });
 audioLoader.load('hljod/sprenging.mp3', (b) => { bufferar.sprenging = b; });
 
 function spila(hljod) {
@@ -939,10 +935,9 @@ function kveikjaASverdi(kveikt) {
   else sverdHljod.stop();
 }
 
-// hurðin rennur mjúklega til hliðar þegar Anakin eða battle droid nálgast
+// hurðin rennur mjúklega til hliðar þegar Anakin nálgast
 function athugaHurd() {
-  const naer = anakin.position.distanceTo(HURD_STADA) < 4.5
-    || ovinir.some((o) => o.lifandi && o.hopur.position.distanceTo(HURD_STADA) < 4.5);
+  const naer = anakin.position.distanceTo(HURD_STADA) < 3.5;
   if (naer === hurdOpin) return;
   hurdOpin = naer;
   animate(vinstriHurd, { x: naer ? -2.25 : -0.75, duration: 1100, ease: 'inOutCubic' });
@@ -986,16 +981,17 @@ function neistar(stada) {
 }
 
 
-// ==================== BATTLE DROIDAR (ÓVINIR) ====================
+// ==================== BATTLE DROIDAR Á VAKT ====================
 
-let droidSnidmat = null;     // B1 módelið, afritað fyrir hvern nýjan droid
+let droidSnidmat = null;     // B1 módelið, afritað fyrir hvern droid
 let b1Klippur = null;
-const ovinir = [];           // { hopur, velta, mixer, ganga, kyrr, virk, hlaup, hljod, lifandi, naestaSkot }
-const skot = [];             // leysiskot á flugi: { bolti, hradi, skyttan, endurkastad, eftir }
+const ovinir = [];           // { hopur, velta, mixer, hljod, lifandi }
 let lif = 100;
 let stig = 0;
 let leikLokid = false;
-let naestiOvinur = 6;        // hvenær næsti droid kemur (sekúndur frá byrjun)
+
+// droidarnir standa í röð sitt hvorum megin við hurðina og snúa inn í flugskýlið
+const DROID_STODUR = [[-5.6, -8.4], [-4.3, -8.4], [-3.0, -8.4], [3.0, -8.4], [4.3, -8.4], [5.6, -8.4]];
 
 // einföld byssa úr kössum og sívalningi. 'hlaup' er tómur hlutur við endann þar sem skotin koma út
 function buaTilByssu() {
@@ -1041,162 +1037,50 @@ Promise.all([gltfLoader.loadAsync('models/b1_battle_droid_star_wars/scene.gltf')
   bradabirgda.stopAllAction();
 
   droidSnidmat = model;
+  stillaUppDroidum();
 });
 
-function buaTilOvin() {
-  // hopur snýr sér og færist, velta er notuð til að láta hann detta aftur á bak
+function buaTilDroid(x, z) {
+  // hopur stendur á sínum stað, velta er notuð til að láta hann detta aftur á bak
   const hopur = new THREE.Group();
   const velta = new THREE.Group();
   const model = SkeletonUtils.clone(droidSnidmat);   // SkeletonUtils afritar líka beinagrindina (og byssuna)
   velta.add(model);
   hopur.add(velta);
-  hopur.position.set(utils.random(-0.8, 0.8, 2), 0, -H - 5);   // byrjar innst í ganginum
+  hopur.position.set(x, 0, z);   // módelið snýr í +z, inn í herbergið
   scene.add(hopur);
 
-  // tvö lög eins og hjá Anakin: líkaminn gengur eða stendur (mocap), hendurnar miða alltaf byssunni
+  // tvö lög: líkaminn andar og hreyfist smá (mocap idle), hendur og höfuð standa vakt og skima.
+  // Hver droid byrjar á sínum stað í klippunum og á sínum hraða, svo þeir séu ekki allir í takt
   const mixer = new THREE.AnimationMixer(model);
-  const ganga = mixer.clipAction(b1Klippur.ganga);
   const kyrr = mixer.clipAction(b1Klippur.kyrr);
-  stillaHrada(ganga, b1Klippur.gangaHradi, DROID_HAED, DROID_HRADI);
-  ganga.time = Math.random() * b1Klippur.ganga.duration;   // ekki allir í takt
-  ganga.play();
-  mixer.clipAction(b1Klippur.mida).play();
+  kyrr.time = Math.random() * b1Klippur.kyrr.duration;
+  kyrr.play();
+  const vakt = mixer.clipAction(b1Klippur.vakt);
+  vakt.time = Math.random() * b1Klippur.vakt.duration;
+  vakt.timeScale = utils.random(0.7, 1.3, 2);
+  vakt.play();
 
   const hljod = new THREE.PositionalAudio(listener);
   hljod.setRefDistance(3);
   hopur.add(hljod);
 
-  ovinir.push({ hopur, velta, mixer, ganga, kyrr, virk: ganga, hlaup: model.getObjectByName('hlaup'), hljod, lifandi: true, naestaSkot: 0 });
+  ovinir.push({ hopur, velta, mixer, hljod, lifandi: true });
 }
 
-function droidSkiptir(o, ny) {
-  if (ny === o.virk) return;
-  ny.reset().play();
-  o.virk.crossFadeTo(ny, 0.3, false);
-  o.virk = ny;
-}
-
-const skotLogun = new THREE.CapsuleGeometry(0.035, 0.5, 4, 8).rotateX(Math.PI / 2);   // liggur eftir z-ás
-const skotEfni = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffd8d0).multiplyScalar(4), fog: false });   // mjög bjartur kjarni
-const skotLjomiLogun = new THREE.CapsuleGeometry(0.09, 0.55, 4, 8).rotateX(Math.PI / 2);
-const skotLjomiEfni = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff2010).multiplyScalar(2), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
-const blossiLogun = new THREE.SphereGeometry(0.08, 10, 8);
-
-// skotblossi: lítil kúla sem stækkar og dofnar á 150 ms
-function blossi(stada) {
-  const kula = new THREE.Mesh(blossiLogun, new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff7050).multiplyScalar(4), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  kula.position.copy(stada);
-  scene.add(kula);
-  animate(kula, {
-    scale: [0.5, 2.2],
-    opacity: [1, 0],
-    duration: 150,
-    ease: 'outQuad',
-    onComplete: () => {
-      scene.remove(kula);
-      kula.material.dispose();
-    },
-  });
-}
-
-function skjota(o) {
-  const bolti = new THREE.Mesh(skotLogun, skotEfni);
-  bolti.add(new THREE.Mesh(skotLjomiLogun, skotLjomiEfni));   // rauður ljómi utan um kjarnann
-  const upphaf = o.hlaup.getWorldPosition(new THREE.Vector3());   // endinn á byssuhlaupinu
-  const mark = anakin.position.clone().setY(1.2);
-  bolti.position.copy(upphaf);
-  bolti.lookAt(mark);
-  scene.add(bolti);
-  skot.push({ bolti, hradi: mark.sub(upphaf).normalize().multiplyScalar(SKOT_HRADI), skyttan: o, endurkastad: false, eftir: 3 });
-  blossi(upphaf);
-  o.hljod.setBuffer(bufferar.blaster);
-  spila(o.hljod);
+function stillaUppDroidum() {
+  for (const o of ovinir) scene.remove(o.hopur);
+  ovinir.length = 0;
+  if (!droidSnidmat) return;
+  for (const [x, z] of DROID_STODUR) buaTilDroid(x, z);
 }
 
 function framAnakins() {
   return new THREE.Vector3(Math.sin(anakin.rotation.y), 0, Math.cos(anakin.rotation.y));
 }
 
-function uppfaeraOvini(delta, nuna) {
-  for (const o of ovinir) {
-    o.mixer.update(delta);
-    if (!o.lifandi || leikLokid) continue;
-
-    const p = o.hopur.position;
-    const iGangi = p.z < -H + 1.5;
-    const fjarlaegd = p.distanceTo(anakin.position);
-
-    if (iGangi || fjarlaegd > 6) {
-      // ganga: fyrst beint út úr ganginum, svo í átt að Anakin
-      const mark = iGangi ? new THREE.Vector3(p.x * 0.5, 0, -H + 2) : anakin.position;
-      o.hopur.lookAt(mark.x, 0, mark.z);
-      const att = new THREE.Vector3().subVectors(mark, p).setY(0).normalize().multiplyScalar(DROID_HRADI * delta);
-      p.x += att.x;
-      if (!iGangi && rekstA(p, 0.4)) p.x -= att.x;
-      p.z += att.z;
-      if (!iGangi && rekstA(p, 0.4)) p.z -= att.z;
-      if (!iGangi) {
-        p.x = Math.max(-MORK, Math.min(MORK, p.x));
-        p.z = Math.max(-MORK, Math.min(MORK, p.z));
-      }
-      droidSkiptir(o, o.ganga);
-    } else {
-      // nógu nálægt: stoppa, miða og skjóta
-      o.hopur.lookAt(anakin.position.x, 0, anakin.position.z);
-      droidSkiptir(o, o.kyrr);
-      if (nuna > o.naestaSkot) {
-        if (o.naestaSkot > 0) skjota(o);
-        o.naestaSkot = nuna + utils.random(1.6, 3, 2);
-      }
-    }
-  }
-}
-
-// Skotið fer langt í hverjum ramma ef tölvan er hæg. Þess vegna er athugað hversu nálægt
-// LEIÐINNI sem skotið fór í þessum ramma (THREE.Line3) hluturinn er, ekki bara nýju stöðunni.
-const leid = new THREE.Line3();
-const naestaPunktur = new THREE.Vector3();
-
-function nalaegtLeid(punktur, fjarlaegd) {
-  leid.closestPointToPoint(punktur, true, naestaPunktur);
-  return naestaPunktur.distanceTo(punktur) < fjarlaegd;
-}
-
-function uppfaeraSkot(delta) {
-  const brjost = anakin.position.clone().setY(1.2);
-  for (let i = skot.length - 1; i >= 0; i--) {
-    const s = skot[i];
-    leid.start.copy(s.bolti.position);
-    s.bolti.position.addScaledVector(s.hradi, delta);
-    leid.end.copy(s.bolti.position);
-    s.eftir -= delta;
-    let burt = s.eftir <= 0;
-
-    if (!s.endurkastad && nalaegtLeid(brjost, 0.6)) {
-      // Anakin ver sig ef sverðið logar og hann snýr að skotinu (minna en ~70° frá)
-      const komFra = s.hradi.clone().normalize().negate();
-      if (sverdKveikt && framAnakins().dot(komFra) > 0.35) {
-        s.endurkastad = true;
-        const markDroid = s.skyttan.hopur.position.clone().setY(1.2);
-        s.hradi.subVectors(markDroid, s.bolti.position).normalize().multiplyScalar(SKOT_HRADI * 1.3);
-        s.bolti.lookAt(markDroid);
-        spila(endurkastHljod);
-        handarHreyfing(hreyfingar.verja);
-        animate(sverdLjos, { intensity: [SVERD_STYRKUR * 2.5, SVERD_STYRKUR], duration: 300 });
-      } else {
-        meidast(10);
-        burt = true;
-      }
-    } else if (s.endurkastad && s.skyttan.lifandi && nalaegtLeid(s.skyttan.hopur.position.clone().setY(1.2), 0.7)) {
-      sigra(s.skyttan);   // skotið fór aftur í droidinn sem skaut því
-      burt = true;
-    }
-
-    if (burt) {
-      scene.remove(s.bolti);
-      skot.splice(i, 1);
-    }
-  }
+function uppfaeraOvini(delta) {
+  for (const o of ovinir) o.mixer.update(delta);
 }
 
 // droid sigraður: dettur aftur á bak, neistar fljúga og hann sekkur svo í gólfið
@@ -1262,9 +1146,7 @@ function leikslok(vann) {
 function uppfaeraStodu() {
   lifFylling.style.width = lif + '%';
   stigTexti.textContent = svaedi === 'geimur' ? `TIE sigraðar: ${tieSigradar}` : `Droidar sigraðir: ${stig}`;
-  if (svaedi !== 'skyli') verkefni.textContent = 'Eyddu öllum TIE flaugunum';
-  else if (stig < DROIDAR_TIL_AD_OPNA) verkefni.textContent = `Sigraðu ${DROIDAR_TIL_AD_OPNA} battle droida (${stig}/${DROIDAR_TIL_AD_OPNA})`;
-  else verkefni.textContent = 'Skipið er tilbúið, farðu um borð!';
+  verkefni.textContent = svaedi === 'skyli' ? 'Farðu að skipinu og um borð' : 'Eyddu öllum TIE flaugunum';
 }
 
 function byrjaUpp() {
@@ -1285,10 +1167,7 @@ function byrjaUpp() {
     spila(droidHljod);
   }
   tieSigradar = 0;
-  for (const o of ovinir) scene.remove(o.hopur);
-  ovinir.length = 0;
-  for (const s of skot) scene.remove(s.bolti);
-  skot.length = 0;
+  stillaUppDroidum();
   lif = 100;
   stig = 0;
   uppfaeraStodu();
@@ -1296,7 +1175,6 @@ function byrjaUpp() {
   anakin.rotation.y = Math.PI;
   markmid = null;
   r2.position.set(1.5, 0, 8.5);
-  naestiOvinur = timer.getElapsed() + 3;
   leikLokid = false;
   leiklok.hidden = true;
   if (!sverdKveikt) kveikjaASverdi(true);
@@ -1368,19 +1246,15 @@ function stillaTakka() {
 
 // anime.js hreyfingar eru "thenable", svo hægt er að bíða eftir þeim með await og láta þær gerast í röð
 async function faraUmBord() {
-  if (svaedi !== 'skyli' || stig < DROIDAR_TIL_AD_OPNA || leikLokid) return;
+  if (svaedi !== 'skyli' || leikLokid) return;
   svaedi = 'flugtak';
   umBord.hidden = true;
   verkefni.textContent = '';
 
   await animate(myrkur, { opacity: [0, 1], duration: 450 });
-  // Anakin og R2 eru komnir um borð, droidarnir hverfa
+  // Anakin og R2 eru komnir um borð
   anakin.visible = false;
   r2.visible = false;
-  for (const o of ovinir) scene.remove(o.hopur);
-  ovinir.length = 0;
-  for (const s of skot) scene.remove(s.bolti);
-  skot.length = 0;
   if (sverdKveikt) kveikjaASverdi(false);
   anakin.position.set(3.5, 0, 6.5);   // myndavélin eltir þennan stað og sér skipið frá hlið
   await animate(myrkur, { opacity: 0, duration: 450 });
@@ -1471,7 +1345,6 @@ byrjaTakki.addEventListener('click', async () => {
   hud.hidden = false;
   stada.hidden = false;
   leikurByrjadur = true;
-  naestiOvinur = timer.getElapsed() + 6;
   umhverfisHljod.play();
   droidHljod.play();
   kveikjaASverdi(true);
@@ -1504,28 +1377,18 @@ renderer.setAnimationLoop((timi) => {
     return;
   }
 
-  if (leikurByrjadur && !leikLokid && svaedi === 'skyli') {
-    hreyfaAnakin(delta);
-
-    // nýr battle droid kemur inn um hurðina öðru hvoru, oftar eftir því sem stigin hækka
-    const aLifi = ovinir.filter((o) => o.lifandi).length;
-    if (droidSnidmat && nuna > naestiOvinur && aLifi < Math.min(5, 2 + Math.floor(stig / 4))) {
-      buaTilOvin();
-      naestiOvinur = nuna + Math.max(2.5, 6 - stig * 0.25);
-    }
-  }
+  if (leikurByrjadur && !leikLokid && svaedi === 'skyli') hreyfaAnakin(delta);
   if (leikurByrjadur && svaedi === 'skyli') {
     athugaHurd();
-    // nógu nálægt skipinu og búinn að sigra nógu marga droida: sýna "Fara um borð"
-    umBord.hidden = leikLokid || stig < DROIDAR_TIL_AD_OPNA || skipKassi.distanceToPoint(anakin.position) > 1.6;
+    // nógu nálægt skipinu: sýna "Fara um borð"
+    umBord.hidden = leikLokid || skipKassi.distanceToPoint(anakin.position) > 1.6;
   }
-  uppfaeraOvini(delta, nuna);
+  uppfaeraOvini(delta);
   uppfaeraR2(delta, nuna);
   if (leikurByrjadur && nuna > naestaPip) {
     spila(r2Hljod);
     naestaPip = nuna + utils.random(9, 18, 2);
   }
-  uppfaeraSkot(delta);
   if (mixer) mixer.update(delta);
   droidMixer.update(delta);
 

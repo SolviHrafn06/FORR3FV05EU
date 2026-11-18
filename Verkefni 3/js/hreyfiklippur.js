@@ -143,5 +143,15 @@ export function droidKlippur(model) {
       { bein: 'Bone027_018', as: 'z', midja: 15 },               // hægri olnbogi
       { bein: 'Bone013_010', as: 'z', midja: 35 },               // vinstri olnbogi
     ]),
+    // á vakt: byssan vísar á ská niður og höfuðið skimar hægt til hliðanna (6 sek)
+    vakt: buaTilKlippu(model, 'Sentry', 6, [
+      { bein: 'Bone026_017', as: 'z', midja: 35 },
+      { bein: 'Bone012_09', as: 'z', midja: 30 },
+      { bein: 'Bone012_09', as: 'x', midja: 15 },
+      { bein: 'Bone027_018', as: 'z', midja: 45 },
+      { bein: 'Bone013_010', as: 'z', midja: 60 },
+      { bein: 'Bone010_07', as: 'y', sveifla: 60 },               // lítur til vinstri og hægri
+      { bein: 'Bone010_07', as: 'z', sveifla: 10, fasi: 1 },      // og aðeins upp og niður
+    ]),
   };
 }

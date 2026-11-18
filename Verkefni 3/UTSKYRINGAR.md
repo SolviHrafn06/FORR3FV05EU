@@ -10,18 +10,17 @@ Lestu það með `js/main.js`, `js/geimur.js`, `js/hreyfiklippur.js` og `verkfae
 1. Hleðsluskjárinn sýnir stiku á meðan módel, áferðir og hljóð hlaðast. Þegar allt er komið birtist **Byrja**.
 2. Smellt er á Byrja: Star Wars merkið flýgur burt inn í þokuna, hljóðin fara í gang og geislasverðið **kviknar**.
 3. Anakin gengur með **WASD/örvum** (hleypur með Shift) eða þangað sem **smellt/pikkað** er á gólfið. Hann kemst ekki út fyrir veggina né í gegnum hluti.
-4. Eftir 6 sekúndur opnast hurðin og **B1 battle droidar** ganga inn. Þegar þeir eru 6 m frá Anakin stoppa þeir, miða og skjóta.
-5. Ef sverðið logar og Anakin snýr að skotinu **slær hann það til baka** í droidinn, sem dettur. Annars missir hann 10 líf.
-6. **Bil** heggur með sverðinu. Droid sem er nær en 2,4 m fyrir framan Anakin dettur.
-7. Þegar lífið klárast birtist „Myrka hliðin sigraði“ og hægt er að reyna aftur.
-8. **R2-D2** rúllar á eftir Anakin, vaggar til hliðanna, snýr hvelfingunni að næsta droid og pípir öðru hvoru.
-9. Á meðan: ljósin í loftinu **flökta**, könnunar-droidinn í horninu **svífur og snýr sér að Anakin**, Millennium Falcon snýst sem **heilmynd**.
+4. Sex **B1 battle droidar** standa vakt í röð sitt hvorum megin við hurðina. Þeir anda (mocap idle), halda byssunni á ská niður og skima með höfðinu, hver á sínum hraða.
+5. **Bil** heggur með sverðinu. Droid sem er nær en 2,4 m fyrir framan Anakin dettur.
+6. Hurðin opnast þegar Anakin gengur að henni.
+7. **R2-D2** rúllar á eftir Anakin, vaggar til hliðanna, snýr hvelfingunni að næsta droid og pípir öðru hvoru.
+8. Á meðan: ljósin í loftinu **flökta**, könnunar-droidinn í horninu **svífur og snýr sér að Anakin**, Millennium Falcon snýst sem **heilmynd**.
 
 ---
 
 ### Seinni hlutinn: geimurinn
 
-10. Þegar 5 droidar eru sigraðir birtist **Fara um borð** nálægt skipinu (eða E).
+10. Þegar Anakin er kominn að skipinu birtist **Fara um borð** (eða E).
 11. Skjárinn dökknar, Anakin og R2 eru komnir um borð, skipið tekur á loft og flýgur út um opið á austurveggnum.
 12. Í geimnum stýrir maður skipinu með mús, fingri eða WASD. TIE flaugar koma í 5 bylgjum, elta skipið, forða sér þegar þær eru of nálægt og skjóta grænum skotum.
 13. Eftir 5 bylgjur: „Þú vannst!“. Ef lífið klárast: „Myrka hliðin sigraði“ og „Reyna aftur“ fer aftur í flugskýlið.
@@ -39,13 +38,13 @@ Lestu það með `js/main.js`, `js/geimur.js`, `js/hreyfiklippur.js` og `verkfae
 | 25% | Tilbúið 3D módel af karakter | `gltfLoader.load('models/anakin_skywalker__battlefront_ii/scene.gltf', ...)` |
 | | WASD, örvar, Pointer Events, Raycaster | `keydown`/`keyup` í **STÝRING**, `pointerdown` + `raycaster.intersectObject(golf)` |
 | | `AnimationMixer` og `THREE.Timer` | `mixer = new THREE.AnimationMixer(model)`, í lykkjunni `timer.update()` og `timer.getDelta()` |
-| | `.crossFadeTo()` milli Idle og Walk/Run | `skiptaUmHreyfingu()` (Anakin) og `droidSkiptir()` (battle droidar) |
+| | `.crossFadeTo()` milli Idle og Walk/Run | `skiptaUmHreyfingu()` |
 | | Veggjamörk með `Math.max` / `Math.min` | skref 4 í `hreyfaAnakin()` |
 | | Árekstrar með `.distanceTo()` og `Box3` | `rekstA()` og `anakinRekstA()` |
 | 20% | `THREE.Group` / `.add()` sem hreyfast saman | `anakin` (módel + sverð), `myndavelarRig` (myndavél), `droid`, battle droidarnir (`hopur` → `velta` → módel), `hurd`, lampar, súlur, kassastaflar, `holoBord` |
 | | Ljósgjafi festur á karakterinn | `sverdLjos` (PointLight) er barn `geislasverd` sem er fest við **handarbein** Anakins |
 | | Myndavélin eltir karakterinn | `camera` er barn `myndavelarRig` sem eltir `anakin` í lykkjunni |
-| | Hlutur með animation clip (auk karakters) | könnunar-droidinn (`AnimationClip('Svifa', ...)`) og battle droidarnir (`March`, `Aim`) |
+| | Hlutur með animation clip (auk karakters) | könnunar-droidinn (`AnimationClip('Svifa', ...)`) og battle droidarnir (mocap `Idle` + `Sentry`) |
 | 10% | Eigin 3D hlutur í réttum skala | `gltfLoader.load('models/minn-hlutur.glb', ...)` + `setjaIRettanSkala(hlutur, MINN_HLUTUR_HAED)` |
 | 10% | Anime.js með Three.js adapter | `import 'animejs/adapters/three'` og kaflinn **ANIME.JS HREYFINGAR**, auk `sigra()`, `neistar()` og merkisins |
 | 10% | `AudioListener`, `AudioLoader`, `Audio`, `PositionalAudio` | kaflinn **HLJÓÐ**, ræst í smelli á Byrja |
@@ -73,7 +72,7 @@ scene
 │               ├── blad (Group)        ← anime.js: scaleY 0 → 1 þegar kviknar
 │               ├── sverdLjos (PointLight)
 │               └── sverdHljod, kveikjaHljod, sveifluHljod, endurkastHljod (PositionalAudio)
-├── battle droid × N: hopur (Group)     ← lookAt + færist
+├── battle droid × 6: hopur (Group)     ← stendur á sínum stað
 │   ├── velta (Group)                   ← anime.js: rotateX -90 þegar hann er sigraður
 │   │   └── afrit af B1 módelinu (SkeletonUtils.clone)
 │   └── hljod (PositionalAudio)         ← skot og sprenging
@@ -147,7 +146,7 @@ scene
 ### HLJÓÐ
 - `AudioListener` er á myndavélinni.
 - `THREE.Audio` (umhverfishljóðið) heyrist jafnt alls staðar. `THREE.PositionalAudio` er 3D: það er barn hlutar og heyrist úr réttri átt og hærra þegar maður er nær.
-- Hver battle droid fær sitt eigið `PositionalAudio`, en þeir deila sömu `bufferar.blaster` og `bufferar.sprenging`.
+- Hver battle droid fær sitt eigið `PositionalAudio` fyrir sprenginguna þegar hann er högginn.
 - Vafrar leyfa ekki hljóð fyrr en notandi smellir, þess vegna er `listener.context.resume()` í smelli á Byrja.
 
 ### ANIME.JS HREYFINGAR
@@ -165,7 +164,7 @@ scene
 - **`holoFlokt()`**: heilmyndin dofnar snöggt öðru hvoru, eins og slæm sending.
 - **Augað** púlsar (`loop: true, alternate: true`), **heilmyndin og hluturinn** snúast (`rotateY: 360`, `ease: 'linear'`).
 - **`kveikjaASverdi()`**: `scaleY` blaðsins 0 ↔ 1 og `intensity` ljóssins 0 ↔ 8.
-- **`athugaHurd()`**: hurðin rennur í `x = ±2.25` þegar Anakin eða droid er nær en 4,5 m.
+- **`athugaHurd()`**: hurðin rennur í `x = ±2.25` þegar Anakin er nær en 3,5 m.
 - **`sigra(o)`**: droidinn dettur aftur á bak (`rotateX: -90` með `outBounce`), sekkur svo í gólfið og er fjarlægður í `onComplete`.
 - **`neistar()`**: 14 litlir kassar skjótast út. `y: [byrjun, upp, gólf]` eru keyframes svo þeir fara upp og detta svo niður.
 - **Merkið** í byrjun: `z: [-2.2, -45]` á 6 sek, hverfur inn í þokuna.
@@ -176,17 +175,12 @@ scene
 - **`uppfaeraR2()`**: markið er `anakin.localToWorld(1, 0, -1.4)`, þ.e. fyrir aftan Anakin og vinstra megin. Hraðinn eykst og minnkar mjúklega (`r2Hradi += (oskHradi - r2Hradi) * ...`), svo hann tekur ekki snögga kippi. Hann notar sömu árekstra og Anakin.
 - Hvelfingin snýr að næsta lifandi droid (annars að Anakin) og `r2Model.rotation.z = sin(tími) * ...` lætur hann vagga þegar hann rúllar.
 
-### BATTLE DROIDAR (ÓVINIR)
-- B1 módelið er hlaðið einu sinni (`droidSnidmat`). `buaTilByssu()` býr til byssu úr kössum sem er fest við hægra handarbeinið með `attach()`. `buaTilOvin()` býr til afrit með `SkeletonUtils.clone()` (byssan fylgir með). Venjulegt `.clone()` virkar ekki á módel með beinagrind því afritið myndi deila beinunum.
-- Tvö lög: líkaminn gengur eða stendur (mocap `ganga` / `kyrr`, `crossFadeTo`), hendurnar miða alltaf (`mida`).
-- `blossi()`: skotblossi við byssuhlaupið, kúla sem stækkar og dofnar með anime.js.
-- Hver droid er `{ hopur, velta, mixer, ganga, mida, virk, hljod, lifandi, naestaSkot }` í fylkinu `ovinir`.
-- **`uppfaeraOvini()`** í hverjum ramma: ef droidinn er enn í ganginum eða lengra en 6 m frá Anakin gengur hann (`ganga`). Annars stoppar hann, miðar (`mida`, skipt með `crossFadeTo`) og skýtur á 1,6–3 sek fresti.
-- **`skjota()`**: býr til leysiskot sem flýgur í átt að brjósti Anakins.
-- **`uppfaeraSkot()`**: færir skotin. Í stað þess að athuga bara nýju stöðuna er athugað hvort `THREE.Line3` frá gömlu stöðunni í þá nýju fari nálægt Anakin. Annars gæti hratt skot flogið í gegnum hann á hægri tölvu.
-  - **Vörn:** `framAnakins()` er stefnan sem hann snýr í. Ef `fram · (átt sem skotið kom úr) > 0.35` (minna en ~70° á milli) og sverðið logar snýr skotið við í átt að droidnum sem skaut.
-- **`hoggHittir()`**: kallað 200 ms eftir að höggið byrjar. Sigrar droida sem eru nær en 2,4 m og fyrir framan Anakin.
-- Nýir droidar koma oftar og fleiri í einu eftir því sem `stig` hækka (í lykkjunni).
+### BATTLE DROIDAR Á VAKT
+- B1 módelið er hlaðið einu sinni (`droidSnidmat`). `buaTilByssu()` býr til byssu úr kössum sem er fest við hægra handarbeinið með `attach()`.
+- `stillaUppDroidum()` býr til einn droid fyrir hverja stöðu í `DROID_STODUR` með `buaTilDroid(x, z)`, sem afritar módelið með `SkeletonUtils.clone()` (byssan fylgir með). Venjulegt `.clone()` virkar ekki á módel með beinagrind því afritið myndi deila beinunum.
+- Tvö lög á hverjum droid: mocap `kyrr` (líkaminn) og `vakt` (hendur og höfuð, úr `hreyfiklippur.js`). Hver byrjar á handahófskenndum stað í klippunum (`action.time`) og `vakt` fær handahófskenndan `timeScale`, svo þeir hreyfa sig ekki allir í takt.
+- **`hoggHittir()`**: kallað 200 ms eftir að höggið byrjar. Droid sem er nær en 2,4 m og fyrir framan Anakin dettur (`sigra()`).
+- „Reyna aftur“ kallar á `stillaUppDroidum()` svo allir standi aftur.
 
 ### SKIPIÐ Í FLUGSKÝLINU, UM BORÐ OG FLUGTAK
 - `skyliSkip` stendur á lendingarfótum og vísar út um opið. `skipKassi` (`Box3`) er bæði árekstur og svæðið þar sem **Fara um borð** birtist.
@@ -200,7 +194,7 @@ scene
 - **`hreyfaAnakin(delta)`**: 1) finna stefnu, 2) snúa mjúklega (`Math.atan2`), 3) færa einn ás í einu og athuga árekstra, svo hann renni meðfram hlutum, 4) `Math.max`/`Math.min` fyrir veggina.
 
 ### LYKKJAN
-`timer.update()` → `timer.getDelta()` (max 0,1 sek) → hreyfa Anakin → kannski nýr droid → hurð → droidar → skot → `mixer.update()` → `droid.lookAt()` → myndavélin eltir (`lerp`) → `render`.
+`timer.update()` → `timer.getDelta()` (max 0,1 sek) → hreyfa Anakin → hurð og „Fara um borð“ → droidar → R2 → `mixer.update()` → `droid.lookAt()` → myndavélin eltir (`lerp`) → `render`.
 
 ---
 

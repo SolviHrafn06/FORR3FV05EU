@@ -2,7 +2,7 @@
 
 Lítill 3D leikur í Three.js (r187) í tveimur hlutum:
 
-1. **Flugskýlið (herbergið):** Anakin Skywalker berst við B1 battle droida sem koma inn um hurðina. Hann slær skotin þeirra til baka með geislasverðinu eða heggur þá. R2-D2 rúllar á eftir honum. Þegar 5 droidar eru sigraðir fer Anakin um borð í skipið sitt, sem tekur á loft og flýgur út um opið á flugskýlinu.
+1. **Flugskýlið (herbergið):** B1 battle droidar standa vakt í röðum, R2-D2 rúllar á eftir Anakin og geislasverðið lýsir upp myrkrið. Anakin gengur að skipinu sínu og fer um borð. Það tekur á loft og flýgur út um opið á flugskýlinu.
 2. **Geimurinn:** frjálst flug innan um loftsteina við plánetu. Bylgjur af TIE orrustuflaugum elta skipið og skjóta. Eyddu öllum 5 bylgjunum til að vinna.
 
 Herbergið er „Dularfulla herbergið“ í Star Wars búningi: næstum tómt, súlur, þoka (`FogExp2`), ljósgjafi í hendi karaktersins og furðuleg vera í horninu sem snýr sér að honum með `.lookAt()`.
@@ -20,7 +20,7 @@ spila á [github pages](https://solvihrafn06.github.io/FORR3FV05EU/Verkefni%203/
 
 ## Áður en þú skilar
 
-1. Ef þú finnur módel af skipi og TIE flaug: settu þau í `models/skip.glb` og `models/tie.glb` (sjá [models/LESTU-MIG.md](models/LESTU-MIG.md)). Annars eru notuð einföld líkön úr grunnformum.
+1. Sjá [models/OSKALISTI.md](models/OSKALISTI.md) yfir módel sem gera leikinn flottari. Ef þú finnur módel af skipi og TIE flaug: settu þau í `models/skip.glb` og `models/tie.glb` (sjá [models/LESTU-MIG.md](models/LESTU-MIG.md)). Annars eru notuð einföld líkön úr grunnformum.
 2. Ljósmyndaðu hlut, breyttu myndinni í .glb með gervigreindartóli og settu hann í `models/minn-hlutur.glb`.
    Breyttu svo `MINN_HLUTUR_HAED` efst í `js/main.js` í raunverulega hæð hans í metrum.
 3. Settu ljósmyndina af hlutnum í Canvas ásamt öllum skránum.
