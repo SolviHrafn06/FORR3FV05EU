@@ -1,201 +1,217 @@
 # Dularfulla herbergið – útskýringar á kóðanum
 
 Þetta skjal er til að **læra** hvað allt gerir svo þú getir útskýrt það fyrir kennaranum.
-Lestu það með `index.html` og `js/main.js` opin hlið við hlið. `main.js` er skipt í kafla með fyrirsögnum eins og `// ==================== HLJÓÐ ====================` og hér er vísað í þá kafla og nöfn fallanna.
+Lestu það með `js/main.js` og `js/hreyfiklippur.js` opin hlið við hlið. `main.js` er skipt í kafla með fyrirsögnum eins og `// ==================== HLJÓÐ ====================` og hér er vísað í þá kafla og nöfn fallanna.
 
 ---
 
 ## 0. Hvernig leikurinn virkar
 
 1. Hleðsluskjárinn sýnir stiku á meðan módel, áferðir og hljóð hlaðast. Þegar allt er komið birtist **Byrja**.
-2. Smellt er á Byrja: umhverfishljóðið og droid-suðið fara í gang og geislasverðið **kviknar** (blaðið vex upp úr skaftinu og ljósið kviknar).
-3. Anakin gengur með **WASD/örvum** (hleypur með Shift) eða gengur þangað sem **smellt/pikkað** er á gólfið.
-4. Hann kemst ekki út fyrir veggina né í gegnum súlur, kassa, stallinn eða droidinn.
-5. Ljósin í loftinu **flökta** óreglulega, droidinn í horninu **svífur** og **snýr sér alltaf að Anakin**, rauða augað púlsar.
-6. Þegar Anakin nálgast hurðina **rennur hún til hliðar**, hvæs heyrist og rauður gangur kemur í ljós.
-7. **Bil** sveiflar sverðinu og **F** kveikir/slekkur á því. Þegar slökkt er verður Anakin að skuggamynd í myrkrinu.
+2. Smellt er á Byrja: Star Wars merkið flýgur burt inn í þokuna, hljóðin fara í gang og geislasverðið **kviknar**.
+3. Anakin gengur með **WASD/örvum** (hleypur með Shift) eða þangað sem **smellt/pikkað** er á gólfið. Hann kemst ekki út fyrir veggina né í gegnum hluti.
+4. Eftir 6 sekúndur opnast hurðin og **B1 battle droidar** ganga inn. Þegar þeir eru 6 m frá Anakin stoppa þeir, miða og skjóta.
+5. Ef sverðið logar og Anakin snýr að skotinu **slær hann það til baka** í droidinn, sem dettur. Annars missir hann 10 líf.
+6. **Bil** heggur með sverðinu. Droid sem er nær en 2,4 m fyrir framan Anakin dettur.
+7. Þegar lífið klárast birtist „Myrka hliðin sigraði“ og hægt er að reyna aftur.
+8. Á meðan: ljósin í loftinu **flökta**, könnunar-droidinn í horninu **svífur og snýr sér að Anakin**, Millennium Falcon snýst sem **heilmynd**.
 
 ---
 
 ## 1. Hvar er hver krafa uppfyllt?
 
-| Vægi | Krafa | Hvar í `main.js` |
+| Vægi | Krafa | Hvar |
 | --- | --- | --- |
-| 20% | Gólf, veggir og hlutir úr grunnformum | kaflinn **HERBERGIÐ** (`PlaneGeometry`, `BoxGeometry`) og **SÚLUR, KASSAR OG STALLUR** (`CylinderGeometry`, `BoxGeometry`) |
+| 20% | Gólf, veggir og hlutir úr grunnformum | **HERBERGIÐ** (`PlaneGeometry`, `BoxGeometry`) og **SÚLUR, KASSAR, STALLUR OG HEILMYNDARBORÐ** (`CylinderGeometry`, `BoxGeometry`) |
 | | Efni og áferðir | `MeshStandardMaterial`, `MeshBasicMaterial`, `aferd()` hleður `golf.png` og `veggur.png` með `TextureLoader` |
-| | Lýsing og skuggar | `HemisphereLight`, þrír `SpotLight` lampar í `buaTilLampa()`, `PointLight` í sverðinu, droid-auganu og ganginum. `castShadow` / `receiveShadow` |
+| | Lýsing og skuggar | `HemisphereLight`, þrír `SpotLight` í `buaTilLampa()`, `PointLight` í sverðinu, droid-auganu og ganginum. `castShadow` / `receiveShadow` |
 | | Þoka | `scene.fog = new THREE.FogExp2(...)` |
-| 25% | Tilbúið `.glb` módel af karakter | `gltfLoader.load('models/anakin.glb', ...)` |
+| 25% | Tilbúið 3D módel af karakter | `gltfLoader.load('models/anakin_skywalker__battlefront_ii/scene.gltf', ...)` |
 | | WASD, örvar, Pointer Events, Raycaster | `keydown`/`keyup` í **STÝRING**, `pointerdown` + `raycaster.intersectObject(golf)` |
 | | `AnimationMixer` og `THREE.Timer` | `mixer = new THREE.AnimationMixer(model)`, í lykkjunni `timer.update()` og `timer.getDelta()` |
-| | `.crossFadeTo()` milli Idle og Walk/Run | `skiptaUmHreyfingu()` |
+| | `.crossFadeTo()` milli Idle og Walk/Run | `skiptaUmHreyfingu()` (Anakin) og `droidSkiptir()` (battle droidar) |
 | | Veggjamörk með `Math.max` / `Math.min` | skref 4 í `hreyfaAnakin()` |
-| | Árekstrar með `.distanceTo()` og `Box3` | `rekstA()` |
-| 20% | `THREE.Group` / `.add()` sem hreyfast saman | `anakin` hópurinn (módel + `geislasverd`), `myndavelarRig` (myndavél), `droid` (skrokkur, fætur, auga, ljós), `hurd`, lampar, súlur, kassastaflar, stallur |
-| | Ljósgjafi festur á karakterinn | `sverdLjos` (PointLight) er barn `geislasverd` sem er barn `anakin` |
+| | Árekstrar með `.distanceTo()` og `Box3` | `rekstA()` og `anakinRekstA()` |
+| 20% | `THREE.Group` / `.add()` sem hreyfast saman | `anakin` (módel + sverð), `myndavelarRig` (myndavél), `droid`, battle droidarnir (`hopur` → `velta` → módel), `hurd`, lampar, súlur, kassastaflar, `holoBord` |
+| | Ljósgjafi festur á karakterinn | `sverdLjos` (PointLight) er barn `geislasverd` sem er fest við **handarbein** Anakins |
 | | Myndavélin eltir karakterinn | `camera` er barn `myndavelarRig` sem eltir `anakin` í lykkjunni |
-| | Hlutur með animation clip (auk karakters) | droidinn: `new THREE.AnimationClip('Svifa', ...)` spilað með `droidMixer` |
+| | Hlutur með animation clip (auk karakters) | könnunar-droidinn (`AnimationClip('Svifa', ...)`) og battle droidarnir (`March`, `Aim`) |
 | 10% | Eigin 3D hlutur í réttum skala | `gltfLoader.load('models/minn-hlutur.glb', ...)` + `setjaIRettanSkala(hlutur, MINN_HLUTUR_HAED)` |
-| 10% | Anime.js með Three.js adapter | `import 'animejs/adapters/three'` og kaflinn **ANIME.JS HREYFINGAR**: `flokta()`, augað, hluturinn snýst, `kveikjaASverdi()`, `sveifla()`, `athugaHurd()`, `synaMerki()` |
+| 10% | Anime.js með Three.js adapter | `import 'animejs/adapters/three'` og kaflinn **ANIME.JS HREYFINGAR**, auk `sigra()`, `neistar()` og merkisins |
 | 10% | `AudioListener`, `AudioLoader`, `Audio`, `PositionalAudio` | kaflinn **HLJÓÐ**, ræst í smelli á Byrja |
 | 5% | `LoadingManager` birtir Byrja | kaflinn **HLEÐSLA**: `manager.onProgress` og `manager.onLoad` |
+
+**Athugið:** Anakin módelið kom **án** tilbúinna hreyfinga. Hreyfingarnar eru búnar til í kóða úr beinagrind þess (sjá kafla 4). Það gæti kennarinn viljað vita.
 
 ---
 
 ## 2. Scene graph (hver er barn hvers)
 
-Allt sem er inndregið undir einhverju hreyfist með því. Ef `anakin` færist eða snýst fylgir sverðið, ljósið og hljóðin með.
+Allt sem er inndregið undir einhverju hreyfist með því.
 
 ```
 scene
-├── myndavelarRig (Group)            ← eltir Anakin
+├── myndavelarRig (Group)               ← eltir Anakin
 │   └── camera
-│       └── listener (AudioListener)   ← eyrun
-├── anakin (Group)                   ← þetta er það sem hreyfist þegar þú gengur
-│   ├── model (anakin.glb)           ← AnimationMixer spilar hreyfingarnar á þessu
-│   └── geislasverd (Group)          ← anime.js sveiflar þessu (rotateX / rotateZ)
-│       ├── skaft
-│       ├── blad (Group)             ← anime.js: scaleY 0 → 1 þegar kviknar
-│       │   ├── kjarni
-│       │   └── ljomi
-│       ├── sverdLjos (PointLight)   ← ljósgjafinn í hendinni, varpar skuggum
-│       └── sverdHljod, kveikjaHljod, sveifluHljod (PositionalAudio)
-├── droid (Group)                    ← .lookAt(anakin) í hverjum ramma
-│   ├── skrokkur (Group)             ← AnimationClip færir hann upp og niður
-│   │   ├── kula, auga, midbaugur, litlu augun, loftnet
-│   │   ├── augaLjos (PointLight)    ← anime.js púlsar intensity
-│   │   └── fotur0 … fotur4 (Group)  ← AnimationClip sveiflar þeim
+│       ├── listener (AudioListener)      ← eyrun
+│       └── merkiHopur                    ← Star Wars merkið (flýgur burt í byrjun)
+├── anakin (Group)                      ← þetta er það sem færist þegar þú gengur
+│   └── model (Anakin)                  ← AnimationMixer spilar hreyfingarnar á beinunum
+│       └── … ValveBipedBip01_R_Hand_017 (hægra handarbein)
+│           └── geislasverd (Group)     ← fylgir hendinni í öllum hreyfingum
+│               ├── skaftHopur (anakin_lightsaber.glb)
+│               ├── blad (Group)        ← anime.js: scaleY 0 → 1 þegar kviknar
+│               ├── sverdLjos (PointLight)
+│               └── sverdHljod, kveikjaHljod, sveifluHljod, endurkastHljod (PositionalAudio)
+├── battle droid × N: hopur (Group)     ← lookAt + færist
+│   ├── velta (Group)                   ← anime.js: rotateX -90 þegar hann er sigraður
+│   │   └── afrit af B1 módelinu (SkeletonUtils.clone)
+│   └── hljod (PositionalAudio)         ← skot og sprenging
+├── droid (Group)                       ← könnunar-droidinn, .lookAt(anakin)
+│   ├── skrokkur (Group)                ← AnimationClip færir hann upp og niður
+│   │   ├── kula, auga, midbaugur, augaLjos (PointLight), loftnet
+│   │   └── fotur0 … fotur4             ← AnimationClip sveiflar þeim
 │   └── droidHljod (PositionalAudio)
-├── hurd (Group)
-│   ├── vinstriHurd, haegriHurd      ← anime.js renna þeim til hliðar (x)
-│   └── hurdHljod (PositionalAudio)
-├── lampi × 3 (Group)                ← hús, pera, SpotLight + target, ljósgeisli
-├── súla × 3 (Group)                 ← fótur, skaft, toppur, ljóshringur
-├── kassastafli × 2 (Group)          ← stór kassi + lítill kassi ofan á
-├── stallur (Group)
-│   └── hlutHaldari (Group)          ← anime.js snýr honum, minn-hlutur.glb fer hingað
-├── veggir (Mesh) → ljósarendur sem börn
-└── golf, loft, gangur …
+├── holoBord (Group)
+│   └── holoHaldari                     ← anime.js snýr honum
+│       └── millennium_falcon.glb
+├── stallur → hlutHaldari               ← minn-hlutur.glb fer hingað
+├── hurd → vinstriHurd, haegriHurd, hurdHljod
+├── lampi × 3, súla × 3, kassastafli × 2
+└── veggir (með ljósarendur sem börn), golf, loft, gangur, leysiskot …
 ```
 
-**Af hverju er myndavélin ekki beint barn `anakin`?** Þá myndi hún snúast í hring í hvert sinn sem Anakin snýr sér og W myndi þýða mismunandi átt. Í staðinn er hún barn `myndavelarRig`, sem færist á eftir Anakin en snýst aldrei. Þannig þýðir W alltaf „inn í herbergið“.
+**Af hverju er myndavélin ekki beint barn `anakin`?** Þá myndi hún snúast í hring í hvert sinn sem Anakin snýr sér og W myndi þýða mismunandi átt. `myndavelarRig` færist á eftir Anakin en snýst aldrei.
+
+**Af hverju er sverðið fest við handarbeinið en ekki `anakin` hópinn?** Þá fylgir það hendinni þegar hann heggur. `hond.attach(geislasverd)` færir sverðið undir beinið án þess að það hreyfist í heiminum.
 
 ---
 
 ## 3. Kaflarnir í `main.js`
 
-### STILLINGAR
-Fastar sem auðvelt er að breyta: stærð herbergisins, hæð Anakins (1,85 m), gönguhraði, hæð skannaða hlutarins o.fl. `MORK` er hversu langt Anakin kemst að veggnum (hálft herbergi mínus radíusinn hans).
-
 ### RENDERER, SENA OG MYNDAVÉL
 - `renderer.shadowMap.enabled = true` kveikir á skuggum. Hver hlutur þarf líka `castShadow` (varpar) eða `receiveShadow` (tekur við).
-- `ACESFilmicToneMapping` gerir björt ljós mýkri, eins og í bíómynd.
-- `FogExp2(litur, þéttleiki)`: því lengra sem hlutur er frá myndavélinni, því meira hverfur hann inn í þokulitinn. Bakgrunnurinn er sami litur svo það sjáist ekki hvar þokan endar.
+- `FogExp2(litur, þéttleiki)`: því lengra sem hlutur er frá myndavélinni, því meira hverfur hann í þokuna.
+- `scene.environment` (RoomEnvironment): dauft „umhverfi“ sem málmar endurspegla. Án þess verða málmhlutir eins og droidarnir kolsvartir.
 
 ### HLEÐSLA (LoadingManager)
-- Einn `LoadingManager` er búinn til og **sendur inn í alla loaderana** (`GLTFLoader`, `TextureLoader`, `AudioLoader`). Þannig veit hann um allar skrár.
-- `onProgress(slod, buid, alls)` er kallað eftir hverja skrá → stikan stækkar.
-- `onLoad` er kallað þegar **allt** er komið → Byrja takkinn birtist (`hidden = false`).
-- `aferd()` hleður áferð og stillir `RepeatWrapping` + `repeat` svo myndin endurtaki sig (gólfið er 20 m og myndin er 4 m → `repeat` 5).
-- `setjaIRettanSkala()` mælir hlutinn með `Box3`, reiknar `s = óskuð hæð / raunhæð`, skalar hann og færir hann svo botninn sé á `y = 0` og miðjan á x og z sé í 0. Sama fallið er notað fyrir Anakin og skannaða hlutinn.
+- Einn `LoadingManager` er sendur inn í alla loaderana (`GLTFLoader`, `TextureLoader`, `AudioLoader`), svo hann veit um allar skrár.
+- `onProgress` stækkar stikuna, `onLoad` birtir Byrja þegar **allt** er komið.
+- `setjaIRettanSkala()` mælir hlut með `Box3`, skalar hann í rétta hæð og lætur hann standa á `y = 0`. `setjaIMidju()` gerir það sama en miðjusetur hlutinn (fyrir Fálkann og merkið).
 
 ### ÁREKSTRAR
-`rekstA(stada)` skilar `true` ef staðan rekst á eitthvað:
-- **Hringlaga hlutir** (súlur, stallur, droid) eru geymdir sem `{ midja, radius }`. Ef `stada.distanceTo(midja) < radius + ANAKIN_RADIUS` þá skarast hringirnir.
-- **Kassar** eru geymdir sem `THREE.Box3` (búið til með `setFromObject(stafli)`). `kassi.distanceToPoint(stada)` gefur fjarlægðina frá Anakin að næsta punkti kassans.
+- **Hringlaga hlutir** (súlur, stallur, borð, könnunar-droid) eru `{ midja, radius }`. Ef `stada.distanceTo(midja) < radius + radíus Anakins` rekast þeir á.
+- **Kassar** eru `THREE.Box3`. `kassi.distanceToPoint(stada)` gefur fjarlægðina í næsta punkt kassans.
+- `anakinRekstA()` athugar líka battle droidana, svo Anakin gengur ekki í gegnum þá.
 
 ### HERBERGIÐ
-- Gólf og loft eru `PlaneGeometry` sem er snúið um x-ásinn (`rotation.x = ±Math.PI / 2`).
-- **Veggirnir eru einhliða plön sem snúa inn.** Three.js teiknar bara framhlið plana. Þegar myndavélin er fyrir utan suðurvegginn (hún er alltaf fyrir aftan Anakin) sér hún bakhlið hans, sem er ekki teiknuð, og sér því inn í herbergið.
-- Norðurveggurinn er úr þremur bútum svo það sé gat fyrir hurðina. Fyrir aftan er `gangur`, kassi með `side: THREE.BackSide` svo hann sjáist að innan.
-- `ljosarendur()` bætir lýsandi röndum á vegginn **sem börnum hans** (`veggur.add(rond)`), þannig að þær fylgja veggnum.
+- **Veggirnir eru einhliða plön sem snúa inn.** Three.js teiknar bara framhlið plana, svo þegar myndavélin er fyrir utan suðurvegginn sér hún í gegnum hann.
+- Norðurveggurinn er úr þremur bútum svo það sé gat fyrir hurðina. Fyrir aftan er `gangur` (kassi með `side: THREE.BackSide`) sem droidarnir koma úr.
 
-### SÚLUR, KASSAR OG STALLUR
-- `buaTilSulu()` býr til `Group` úr fjórum sívalningum og bætir súlunni í `hindranir`.
-- `buaTilKassastafla()` setur lítinn kassa ofan á stóran í einum hópi og býr til `Box3` utan um allan staflann.
-- `stallur` er fyrir skannaða hlutinn. `hlutHaldari` er tómur hópur efst á stallinum sem hluturinn fer í.
-
-### LOFTLJÓS
-`buaTilLampa()` býr til `SpotLight` sem vísar beint niður. `ljos.target` er líka sett í hópinn og fært 6 m niður, því SpotLight lýsir alltaf í átt að `target`. Gegnsæ keila með `AdditiveBlending` líkir eftir ljósgeisla í þokunni.
-
-### HURÐ
-Tveir helmingar í `hurd` hópnum. Hurðin er 0,2 m **fyrir aftan** vegginn, svo þegar helmingarnir renna til hliðar hverfa þeir á bak við veggbútana.
+### SÚLUR, KASSAR, STALLUR OG HEILMYNDARBORÐ
+- Súlur og kassastaflar eru `Group` úr einföldum formum. Litli kassinn er barn staflans.
+- Heilmyndin: öll efni Fálkans eru skipt út fyrir eitt `holoEfni` (gegnsætt, blátt, `AdditiveBlending`). Þannig lítur það út eins og ljós.
 
 ### ANAKIN OG GEISLASVERÐIÐ
-- `anakin` er tómur `Group`. Módelið og sverðið eru sett inn í hann. Það er `anakin` sem er fært og snúið, ekki módelið sjálft.
-- Sverðið: skaft, blað (kjarni + bláum ljóma) og `PointLight`. Blaðið er í eigin hópi sem byrjar efst á skaftinu, svo `blad.scale.y` frá 0 í 1 lætur það vaxa upp úr skaftinu.
-- `sverdLjos.shadow.camera.near = 1`: hlutir nær ljósinu en 1 m varpa ekki skugga. Annars varpar Anakin sjálfur risastórum skugga beint að myndavélinni.
-- **Hreyfingarnar:** `gltf.animations` er listi af klippum. `finnaKlippu()` leitar að klippu sem heitir t.d. „walk“, „run“ eða „idle“ (hástafir skipta ekki máli). Hver klippa verður `AnimationAction` með `mixer.clipAction(klippa)`. Ef engin Idle er til notum við fyrsta ramma göngunnar með `timeScale = 0`.
-- `skiptaUmHreyfingu(ny)`: ef ný hreyfing er önnur en sú sem er í gangi er hún endurræst (`reset().play()`) og `virkHreyfing.crossFadeTo(ny, 0.3)` blandar mjúklega á 0,3 sek: gamla dofnar út, nýja kemur inn.
+- **Skaftið** (`anakin_lightsaber.glb`) er á ská í módelinu og með sínu eigin blaði. Kóðinn notar endana á innbyggða blaðinu (`Laser`) til að finna í hvaða átt það vísar, tekur blaðið burt og snýr skaftinu upp með `quaternion.setFromUnitVectors(stefna, upp)`. Svo er okkar eigið blað notað, því það getur kviknað og slokknað.
+- **Hreyfingarnar** eru búnar til með `anakinKlippur(model)` (sjá kafla 4) **áður** en módelinu er snúið og það skalað.
+- Tvö „lög“ af hreyfingum keyra á sama tíma á sama `mixer`:
+  1. `kyrr` / `ganga` / `hlaupa`: fætur, vinstri hönd og búkur. Skipt á milli með `crossFadeTo` í `skiptaUmHreyfingu()`.
+  2. `vorn` / `hogg`: bara hægri höndin. Höggið er `LoopOnce` og þegar það klárast (`'finished'` atburður) fer vörnin aftur í gang.
+  Af því að lögin snerta ekki sömu beinin getur Anakin gengið og höggvið í einu.
+- **Sverðið fest í lófann:** `mixer.update(0)` setur Anakin í varnarstöðu, lófinn er reiknaður mitt á milli handarbeinsins og fingranna, sverðið sett þar og svo `hond.attach(geislasverd)`.
 
 ### DROID (VERAN Í HORNINU)
-- `droid` er ytri hópurinn. Í lykkjunni er kallað á `droid.lookAt(x, 1.5, z)` á stöðu Anakins: hópurinn snýst svo **+z ásinn** hans vísi á Anakin. Þess vegna er augað sett á `z = 0.42`.
-- `skrokkur` er innri hópur. **Hreyfiklippan er búin til í kóða:**
-  - `VectorKeyframeTrack('skrokkur.position', tímar, gildi)`: á 0 sek er y = -0,15, á 1,5 sek er y = 0,15 og á 3 sek aftur -0,15.
-  - `NumberKeyframeTrack('fotur0.rotation[x]', ...)`: fæturnir sveiflast fram og aftur, annar hver á móti.
-  - Nafnið fyrir framan punktinn (`skrokkur`, `fotur0`) er `.name` hlutarins sem sporið á við.
-  - `new THREE.AnimationClip('Svifa', 3, spor)` býr til 3 sek klippu og `droidMixer.clipAction(...).play()` spilar hana í lykkju.
-- Af hverju tveir hópar? `lookAt` stjórnar snúningi ytri hópsins og klippan stjórnar stöðu innri hópsins, svo þau trufla ekki hvort annað.
-
-### MINN EIGIN 3D HLUTUR
-Hlaðið inn eins og Anakin, skalað í `MINN_HLUTUR_HAED` metra (raunveruleg hæð hlutarins) og sett í `hlutHaldari` á stallinum. Þar sem Anakin er 1,85 m og hluturinn er í sinni réttu hæð eru stærðarhlutföllin rétt.
+- Ytri hópurinn `droid` snýr sér með `droid.lookAt(...)` að Anakin. Augað er á `+z` því `lookAt` snýr +z ásnum að markinu.
+- **Hreyfiklippan er búin til í kóða** úr `VectorKeyframeTrack('skrokkur.position', ...)` og `NumberKeyframeTrack('fotur0.rotation[x]', ...)`. Nafnið fyrir framan punktinn er `.name` hlutarins sem sporið á við.
 
 ### HLJÓÐ
-- `AudioListener` er sett á myndavélina: það eru „eyrun“.
-- `THREE.Audio` (umhverfishljóðið) heyrist jafnt alls staðar.
-- `THREE.PositionalAudio` er 3D hljóð: það er sett sem barn hlutar (sverð, droid, hurð) og verður hærra því nær sem myndavélin er og kemur úr réttri átt (vinstri/hægri). `setRefDistance` segir hversu langt frá hljóðið heldur fullum styrk.
-- `hladaHljodi()` notar `AudioLoader` (með manager) og stillir buffer, lykkju og styrk.
-- Vafrar leyfa ekki hljóð fyrr en notandi hefur smellt, þess vegna er `listener.context.resume()` og `play()` í smelli á Byrja.
+- `AudioListener` er á myndavélinni.
+- `THREE.Audio` (umhverfishljóðið) heyrist jafnt alls staðar. `THREE.PositionalAudio` er 3D: það er barn hlutar og heyrist úr réttri átt og hærra þegar maður er nær.
+- Hver battle droid fær sitt eigið `PositionalAudio`, en þeir deila sömu `bufferar.blaster` og `bufferar.sprenging`.
+- Vafrar leyfa ekki hljóð fyrr en notandi smellir, þess vegna er `listener.context.resume()` í smelli á Byrja.
 
 ### ANIME.JS HREYFINGAR
 `import 'animejs/adapters/three'` skráir Three.js adapterinn. Eftir það skilur `animate()` Three hluti beint:
 
-| Eiginleiki í anime.js | Hvað breytist í Three.js |
+| Í anime.js | Í Three.js |
 | --- | --- |
 | `x`, `y`, `z` | `position.x/y/z` |
-| `rotateX`, `rotateY`, `rotateZ` (gráður) | `rotation.x/y/z` (radíanar) |
+| `rotateX`, `rotateY`, `rotateZ` (gráður) | `rotation` (radíanar) |
 | `scale`, `scaleY` | `scale` |
 | `opacity` | `material.opacity` |
 | `intensity` | `light.intensity` |
 
-Hreyfingarnar:
-- **`flokta(lampi)`**: velur af handahófi hvort ljósið blikkar (fer næstum í 0 og aftur upp) eða breytir aðeins birtunni. Í `onComplete` kallar fallið á sjálft sig, svo flöktið er alltaf óreglulegt. `onUpdate` lætur peruna og ljósgeislann fylgja birtunni.
-- **Augað** í droidnum: `loop: true, alternate: true` lætur `intensity` fara 2 → 8 → 2 endalaust.
-- **Skannaði hluturinn**: `rotateY: 360` á 14 sek með `ease: 'linear'` í lykkju.
+- **`flokta(lampi)`**: velur af handahófi blikk eða smá birtubreytingu og kallar á sjálft sig í `onComplete`, svo flöktið er alltaf óreglulegt.
+- **`holoFlokt()`**: heilmyndin dofnar snöggt öðru hvoru, eins og slæm sending.
+- **Augað** púlsar (`loop: true, alternate: true`), **heilmyndin og hluturinn** snúast (`rotateY: 360`, `ease: 'linear'`).
 - **`kveikjaASverdi()`**: `scaleY` blaðsins 0 ↔ 1 og `intensity` ljóssins 0 ↔ 8.
-- **`sveifla()`**: fylki með fleiri en tveimur gildum eru *keyframes*: `rotateX: [35, -40, 120, 35]` lyftir sverðinu, heggur og fer aftur í hvíldarstöðu.
-- **`athugaHurd()`**: ef Anakin er nær hurðinni en 4,5 m renna helmingarnir í `x = ±2.25` og ljósið í ganginum kviknar. `hurdOpin` passar að þetta gerist bara einu sinni í hvert skipti.
-- **`synaMerki()`**: hringur á gólfinu stækkar og dofnar þar sem smellt var.
+- **`athugaHurd()`**: hurðin rennur í `x = ±2.25` þegar Anakin eða droid er nær en 4,5 m.
+- **`sigra(o)`**: droidinn dettur aftur á bak (`rotateX: -90` með `outBounce`), sekkur svo í gólfið og er fjarlægður í `onComplete`.
+- **`neistar()`**: 14 litlir kassar skjótast út. `y: [byrjun, upp, gólf]` eru keyframes svo þeir fara upp og detta svo niður.
+- **Merkið** í byrjun: `z: [-2.2, -45]` á 6 sek, hverfur inn í þokuna.
+- **`meidast()`**: rauður skjár blikkar (anime.js virkar líka á HTML).
+
+### BATTLE DROIDAR (ÓVINIR)
+- B1 módelið er hlaðið einu sinni (`droidSnidmat`). `buaTilOvin()` býr til afrit með `SkeletonUtils.clone()`. Venjulegt `.clone()` virkar ekki á módel með beinagrind því afritið myndi deila beinunum.
+- Hver droid er `{ hopur, velta, mixer, ganga, mida, virk, hljod, lifandi, naestaSkot }` í fylkinu `ovinir`.
+- **`uppfaeraOvini()`** í hverjum ramma: ef droidinn er enn í ganginum eða lengra en 6 m frá Anakin gengur hann (`ganga`). Annars stoppar hann, miðar (`mida`, skipt með `crossFadeTo`) og skýtur á 1,6–3 sek fresti.
+- **`skjota()`**: býr til leysiskot sem flýgur í átt að brjósti Anakins.
+- **`uppfaeraSkot()`**: færir skotin. Í stað þess að athuga bara nýju stöðuna er athugað hvort `THREE.Line3` frá gömlu stöðunni í þá nýju fari nálægt Anakin. Annars gæti hratt skot flogið í gegnum hann á hægri tölvu.
+  - **Vörn:** `framAnakins()` er stefnan sem hann snýr í. Ef `fram · (átt sem skotið kom úr) > 0.35` (minna en ~70° á milli) og sverðið logar snýr skotið við í átt að droidnum sem skaut.
+- **`hoggHittir()`**: kallað 200 ms eftir að höggið byrjar. Sigrar droida sem eru nær en 2,4 m og fyrir framan Anakin.
+- Nýir droidar koma oftar og fleiri í einu eftir því sem `stig` hækka (í lykkjunni).
 
 ### STÝRING
-- `takkar` er `Set` af tökkum sem er haldið niðri. `keydown` bætir við, `keyup` tekur út. Þannig virka t.d. W + A saman (á ská).
-- `pointerdown` virkar bæði fyrir mús og snertiskjá. Músarstaðan er umreiknuð í -1…1 (`benditill`), `raycaster.setFromCamera()` sendir geisla frá myndavélinni og `intersectObject(golf)` finnur hvar hann hittir gólfið. Sá punktur verður `markmid`.
-- **`hreyfaAnakin(delta)`** í fjórum skrefum:
-  1. Finna stefnu (`att`) út frá tökkum eða út frá `markmid`.
-  2. Snúa Anakin mjúklega: `Math.atan2(att.x, att.z)` gefur hornið sem hann á að snúa í. `munur` er stysta leiðin þangað (svo hann snúi ekki 350° í stað 10°).
-  3. Færa hann **einn ás í einu**: fyrst x, athuga árekstur, svo z. Ef hann rekst á súlu á ská rennur hann meðfram henni í stað þess að stoppa alveg.
-  4. `Math.max(-MORK, Math.min(MORK, x))` heldur honum innan veggjanna.
-
-  Hraðinn er margfaldaður með `delta` (sek síðan síðasti rammi) svo hann gangi jafn hratt á 30 og 144 fps.
+- `takkar` er `Set` af tökkum sem er haldið niðri, svo W + A virka saman.
+- `pointerdown` + `Raycaster` finnur hvar á gólfinu var smellt → `markmid`.
+- **`hreyfaAnakin(delta)`**: 1) finna stefnu, 2) snúa mjúklega (`Math.atan2`), 3) færa einn ás í einu og athuga árekstra, svo hann renni meðfram hlutum, 4) `Math.max`/`Math.min` fyrir veggina.
 
 ### LYKKJAN
-`renderer.setAnimationLoop()` keyrir í hverjum ramma:
-1. `timer.update(timi)` og `timer.getDelta()`: tíminn síðan síðasti rammi. `Math.min(..., 0.1)` kemur í veg fyrir stórt stökk ef flipinn var í bakgrunni.
-2. Anakin hreyfður og athugað hvort hurðin eigi að opnast.
-3. `mixer.update(delta)` og `droidMixer.update(delta)` spila hreyfiklippurnar áfram.
-4. `droid.lookAt(...)` snýr droidnum að Anakin.
-5. `myndavelarRig.position.lerp(mark, 1 - Math.exp(-4 * delta))` færir myndavélina mjúklega á eftir Anakin. Markið er takmarkað við ±6,5 m svo myndavélin sjái ekki út fyrir herbergið þegar Anakin er við vegg.
-6. `renderer.render(scene, camera)`.
+`timer.update()` → `timer.getDelta()` (max 0,1 sek) → hreyfa Anakin → kannski nýr droid → hurð → droidar → skot → `mixer.update()` → `droid.lookAt()` → myndavélin eltir (`lerp`) → `render`.
 
 ---
 
-## 4. Ef Anakin módelið lítur skringilega út
+## 4. `hreyfiklippur.js`: hreyfingar úr beinagrind
+
+Anakin og B1 komu með beinagrind (bein fyrir læri, hné, handleggi …) en **engar hreyfingar**. Þetta skjal býr þær til.
+
+**Hugmyndin:** hvert bein sveiflast eins og sínusbylgja:
+
+```
+horn = midja + sveifla · sin(2π · t / lengd + fasi)
+```
+
+Dæmi úr göngunni:
+```js
+{ bein: 'ValveBipedBip01_R_Thigh_052', as: 'z', sveifla: 24 }            // hægra læri ±24°
+{ bein: 'ValveBipedBip01_L_Thigh_055', as: 'z', sveifla: 24, fasi: H }   // vinstra læri á móti (H = π)
+```
+
+**Ásarnir** eru ásar módelsins í hvíldarstöðu: x = fram, y = upp, z = til hægri. Fótur sem vísar niður fer **fram** þegar honum er snúið jákvætt um z.
+
+**Stærðfræðin í `buaTilKlippu()`:** hvert bein á sinn eigin snúning (`bein.quaternion`) miðað við foreldrið sitt. Til að snúa beininu um ás *módelsins* þarf að umreikna:
+
+```
+nýr snúningur = P⁻¹ · R · P · hvíldarstaða
+```
+
+- `P` = hvernig foreldri beinsins snýr í hnitum módelsins
+- `R` = snúningurinn sem við viljum (t.d. 24° um z)
+- `P⁻¹ · R · P` breytir R úr hnitum módelsins yfir í hnit foreldrisins
+
+Þetta er reiknað fyrir 17 tímapunkta og sett í `QuaternionKeyframeTrack`. Úr þeim verður `AnimationClip` sem `AnimationMixer` spilar alveg eins og innbyggða hreyfingu.
+
+Fyrir **höggið** (gerist bara einu sinni) eru notaðir `lyklar` í stað sínusbylgju: `[82, 15, 60, 82]` þýðir byrja í vörn, lyfta, höggva, aftur í vörn.
+
+---
+
+## 5. Ef eitthvað lítur skringilega út
 
 | Vandamál | Lausn |
 | --- | --- |
-| Gengur afturábak | `ANAKIN_SNUNINGUR = Math.PI` |
-| Of stór / lítill | `ANAKIN_HAED` (hann er alltaf skalaður í þessa hæð) |
-| Hreyfist ekki | Skoðaðu `Hreyfingar í anakin.glb: [...]` í Console. Ef klippurnar heita eitthvað annað, bættu nafninu við í `finnaKlippu(...)` |
-| Sverðið er ekki í hendinni | Breyttu `geislasverd.position.set(-0.3, 1.0, 0.3)` |
-| Er svartur | Sum módel eru mjög „málmkennd“. Prófaðu `hlutur.material.metalness = 0` inni í `model.traverse` |
-| Rennur áfram og hoppar svo til baka | Göngu-hreyfingin er með „root motion“. Sæktu útgáfu „in place“ (t.d. á Mixamo er hakað í *In Place*) |
+| Of stór / lítill | `ANAKIN_HAED` / `DROID_HAED` |
+| Of erfitt / létt | `SKOT_HRADI`, `DROID_HRADI`, `meidast(10)` eða `0.35` í vörninni í `uppfaeraSkot()` |
+| Sverðið vísar skringilega | `SVERD_HALLI_X` og `SVERD_HALLI_Z` |
+| Höndin er á röngum stað | hornin í `VORN` í `hreyfiklippur.js` |
+| Hægt á síma | taktu `castShadow` af `sverdLjos` (punktljós með skuggum teiknar senuna 6 sinnum) |
