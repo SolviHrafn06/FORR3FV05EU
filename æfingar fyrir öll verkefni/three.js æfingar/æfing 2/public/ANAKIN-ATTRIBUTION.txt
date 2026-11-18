@@ -1,0 +1,18 @@
+Anakin Lightsaber by Khafesus
+Source: https://sketchfab.com/3d-models/anakin-lightsaber-8d248183c9ae4a5e904862db0db83dc7
+Profile shown on Sketchfab: https://sketchfab.com/Khafesus
+Profile recorded in source GLB metadata: https://sketchfab.com/Khafesys
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License URL: https://creativecommons.org/licenses/by/4.0/
+
+Downloaded from Sketchfab on 2026-11-12 as the 2k-texture GLB conversion.
+Original file retained as anakin-lightsaber-source.glb.
+
+Adapted file: anakin-episode3-animated.glb.
+Changes: normalized orientation/scale, separated and aligned BladePivot,
+blue blade emission, Ignite (0.35 s) and Retract (0.30 s) animation clips.
+Hilt geometry/index arrays and five embedded image payloads are preserved.
+The web viewer adds lighting, bloom, raycast interaction, and reversible animation.
+
+Retain author credit, source and license links, and a notice of modifications
+when sharing the adapted model or project.

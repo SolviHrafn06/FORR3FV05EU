@@ -1,0 +1,9 @@
+Millennium Falcon by fredbear1211
+Source: https://sketchfab.com/3d-models/millennium-falcon-2c0783d083e44b959c691682b4cb1f16
+Author: https://sketchfab.com/fredbear1211
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License URL: https://creativecommons.org/licenses/by/4.0/
+
+Downloaded from Sketchfab on 2026-11-12 as the 1k-texture GLB conversion.
+Saved as millennium-falcon.glb. No model content changes were made locally.
+The viewer scales and centers the model at runtime.
