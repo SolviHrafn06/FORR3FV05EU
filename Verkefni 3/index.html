@@ -33,11 +33,28 @@
     <button id="byrja" hidden>Byrja</button>
   </div>
 
+  <!-- líf og stig efst á skjánum -->
+  <div id="stada" hidden>
+    <div class="lif"><span>Líf</span><div class="lif-stika"><div id="lif-fylling"></div></div></div>
+    <div id="stig">Droidar sigraðir: 0</div>
+  </div>
+
+  <!-- rauður skjár sem blikkar þegar Anakin verður fyrir skoti -->
+  <div id="medsli"></div>
+
+  <!-- birtist þegar lífið klárast -->
+  <div id="leiklok" hidden>
+    <h2>Myrka hliðin sigraði</h2>
+    <p id="lokastig"></p>
+    <button id="aftur">Reyna aftur</button>
+  </div>
+
   <!-- stjórnborð sem birtist eftir að smellt er á Byrja -->
   <div id="hud" hidden>
     <p class="leidbeiningar">
-      <span class="lyklabord"><b>WASD / örvar</b> ganga · <b>Shift</b> hlaupa · <b>Bil</b> sveifla · <b>F</b> sverð á / af<br></span>
-      <b>Smelltu eða pikkaðu á gólfið</b> til að ganga þangað
+      <span class="lyklabord"><b>WASD / örvar</b> ganga · <b>Shift</b> hlaupa · <b>Bil</b> höggva · <b>F</b> sverð á / af<br></span>
+      <b>Smelltu eða pikkaðu á gólfið</b> til að ganga þangað<br>
+      <b>Snúðu að skotunum</b> með sverðið á lofti til að slá þau til baka
     </p>
     <div class="takkar">
       <button id="takki-sveifla">Sveifla</button>

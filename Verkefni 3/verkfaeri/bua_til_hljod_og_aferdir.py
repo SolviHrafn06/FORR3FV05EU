@@ -128,6 +128,31 @@ def hurd():
     vista('hurd', hvaes + 1.5 * dynkur, 0.85)
 
 
+def blaster():
+    """Leysiskot frá battle droid: hár tónn sem fellur hratt."""
+    t = timi(0.3)
+    tidni = 300 + 1700 * np.exp(-t * 14)
+    fasi = 2 * np.pi * np.cumsum(tidni) / RATE
+    s = np.sign(np.sin(fasi)) * 0.5 + np.sin(fasi)   # hálf ferhyrningsbylgja
+    vista('blaster', s * np.exp(-t * 9), 0.7)
+
+
+def endurkast():
+    """Sverðið slær skotið til baka: málmhljómur + suð."""
+    t = timi(0.5)
+    hljomur = sum(np.sin(2 * np.pi * f * t) for f in (1250, 1870, 2630)) * np.exp(-t * 10)
+    s = hljomur + hum(t, 140) * np.exp(-t * 8) * 1.5 + rng.normal(0, 1, len(t)) * np.exp(-t * 40)
+    vista('endurkast', s, 0.85)
+
+
+def sprenging():
+    """Droid brotnar: dynkur og brak."""
+    t = timi(0.9)
+    dynkur = laagpass(rng.normal(0, 1, len(t)), 0.97) * 25 * np.exp(-t * 5)
+    brak = rng.normal(0, 1, len(t)) * (rng.random(len(t)) < 0.02) * np.exp(-t * 4) * 3
+    vista('sprenging', dynkur + brak + np.sin(2 * np.pi * 50 * t) * np.exp(-t * 7), 0.9)
+
+
 # ---------- áferðir ----------
 
 def vista_mynd(nafn, gildi, litur):
@@ -189,5 +214,8 @@ if __name__ == '__main__':
     sveifla()
     droid()
     hurd()
+    blaster()
+    endurkast()
+    sprenging()
     golf()
     veggur()
