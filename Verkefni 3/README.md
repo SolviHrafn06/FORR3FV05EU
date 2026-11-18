@@ -1,31 +1,29 @@
 # Dularfulla herbergið – Star Wars
 
-Lítill 3D leikur í Three.js (r187). Anakin Skywalker stendur í dimmu herbergi í geimstöð með geislasverð sem lýsir upp myrkrið.
-B1 battle droidar ganga inn um hurðina og skjóta á hann. Anakin slær skotin til baka með sverðinu eða heggur droidana.
-R2-D2 rúllar á eftir honum og fylgist með óvinunum. Í horninu svífur könnunar-droid sem snýr sér alltaf að honum, ljósin flökta og Millennium Falcon snýst sem heilmynd á borði.
+Lítill 3D leikur í Three.js (r187) í tveimur hlutum:
 
-Þemað er „Dularfulla herbergið“ í Star Wars búningi: næstum tómt herbergi, þrjár súlur, þoka (`FogExp2`), ljósgjafi í hendi karaktersins og furðuleg vera í horninu sem snýr sér að honum með `.lookAt()`.
+1. **Flugskýlið (herbergið):** Anakin Skywalker berst við B1 battle droida sem koma inn um hurðina. Hann slær skotin þeirra til baka með geislasverðinu eða heggur þá. R2-D2 rúllar á eftir honum. Þegar 5 droidar eru sigraðir fer Anakin um borð í skipið sitt, sem tekur á loft og flýgur út um opið á flugskýlinu.
+2. **Geimurinn:** frjálst flug innan um loftsteina við plánetu. Bylgjur af TIE orrustuflaugum elta skipið og skjóta. Eyddu öllum 5 bylgjunum til að vinna.
+
+Herbergið er „Dularfulla herbergið“ í Star Wars búningi: næstum tómt, súlur, þoka (`FogExp2`), ljósgjafi í hendi karaktersins og furðuleg vera í horninu sem snýr sér að honum með `.lookAt()`.
 
 spila á [github pages](https://solvihrafn06.github.io/FORR3FV05EU/Verkefni%203/)
 
 ## Stýring
 
-| Tölva | Sími / spjaldtölva |
-| --- | --- |
-| **WASD** eða **örvar**: ganga | pikkaðu á gólfið til að ganga þangað |
-| **Shift**: hlaupa | **Sveifla** takkinn: höggva |
-| **smellur á gólfið**: ganga þangað | **Sverð** takkinn: kveikja / slökkva |
-| **Bil**: höggva | |
-| **F**: kveikja / slökkva á sverðinu | |
+| | Tölva | Sími / spjaldtölva |
+| --- | --- | --- |
+| **Flugskýlið** | **WASD / örvar** ganga, **Shift** hlaupa, **smellur** ganga þangað, **bil** höggva, **F** sverð á/af, **E** fara um borð | pikka á gólfið, **Sveifla**, **Sverð**, **Fara um borð** |
+| **Geimurinn** | **mús** eða **WASD / örvar** stýra, **smellur / bil** skjóta, **Shift** hraði | **draga fingur** til að stýra, **Skjóta**, **Hraði** (haldið inni) |
 
-**Leikurinn:** snúðu að droid sem skýtur á meðan sverðið logar, þá slærðu skotið aftur í hann. Ef þú snýrð baki í skotið missirðu líf.
-Farðu nálægt droid og ýttu á bil til að höggva hann. Droidunum fjölgar eftir því sem þú sigrar fleiri.
+Í geimnum sýna **rauð merki** hvar TIE flaugarnar eru (örvar við jaðarinn ef þær eru ekki á skjánum). Byssurnar miða aðeins sjálfar ef TIE er nálægt miðinu.
 
 ## Áður en þú skilar
 
-1. Ljósmyndaðu hlut, breyttu myndinni í .glb með gervigreindartóli og settu hann í `models/minn-hlutur.glb`.
+1. Ef þú finnur módel af skipi og TIE flaug: settu þau í `models/skip.glb` og `models/tie.glb` (sjá [models/LESTU-MIG.md](models/LESTU-MIG.md)). Annars eru notuð einföld líkön úr grunnformum.
+2. Ljósmyndaðu hlut, breyttu myndinni í .glb með gervigreindartóli og settu hann í `models/minn-hlutur.glb`.
    Breyttu svo `MINN_HLUTUR_HAED` efst í `js/main.js` í raunverulega hæð hans í metrum.
-2. Settu ljósmyndina af hlutnum í Canvas ásamt öllum skránum.
+3. Settu ljósmyndina af hlutnum í Canvas ásamt öllum skránum.
 
 ## Skrár
 
@@ -35,10 +33,11 @@ Verkefni 3/
   css/style.css
   js/main.js            allur leikurinn
   js/hreyfiklippur.js   hreyfingar sverðshandarinnar, fingra og byssuhanda B1
+  js/geimur.js          geimhlutinn: geimsenan, flugið, TIE flaugar, skot og sprengingar
   hreyfingar/           hreyfingar.json: mocap ganga, hlaup og kyrrstaða, flutt yfir á Anakin og B1
   models/               módelin (sjá models/LESTU-MIG.md)
   aferdir/              golf.png og veggur.png (TextureLoader)
-  hljod/                10 hljóð (AudioLoader)
+  hljod/                13 hljóð (AudioLoader)
   verkfaeri/            python skrifta (hljóð og áferðir) og flytja-hreyfingar.html (mocap → Anakin/B1)
   UTSKYRINGAR.md        útskýringar á öllum kóðanum
 ```

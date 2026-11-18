@@ -10,6 +10,7 @@ import { animate, utils } from 'animejs';
 // Three.js adapterinn kennir anime.js á Three hluti, t.d. x, y, z, rotateY (í gráðum), scale, opacity og intensity
 import 'animejs/adapters/three';
 import { anakinKlippur, droidKlippur, B1_HAEGRI_HOND } from './hreyfiklippur.js';
+import { buaTilGeimsins, buaTilSkipslikan, hladaModeli, plánetuAferd, buaTilStjornur, SKIP_SLOD, SKIP_LENGD, SKIP_SNUNINGUR } from './geimur.js';
 
 
 // ==================== STILLINGAR ====================
@@ -29,6 +30,7 @@ const DROID_HAED = 1.9;
 const DROID_HRADI = 1.4;
 const SKOT_HRADI = 14;
 const MORK = HALFT_HERBERGI - ANAKIN_RADIUS;   // lengst sem Anakin kemst að veggnum
+const DROIDAR_TIL_AD_OPNA = 5;   // hversu marga droida þarf að sigra áður en skipið opnast
 
 
 // ==================== RENDERER, SENA OG MYNDAVÉL ====================
@@ -67,7 +69,8 @@ scene.add(new THREE.HemisphereLight(0x6070a0, 0x0a0a12, 1.0));   // dauf grunnbi
 // Senan er fyrst teiknuð í mynd (RenderPass), björtu hlutarnir eru gerðir óskýrir og lagðir ofan á (UnrealBloomPass)
 // og loks er litunum breytt fyrir skjáinn (OutputPass)
 const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
+const renderPass = new RenderPass(scene, camera);   // skipt yfir í geimsenuna þegar Anakin flýgur af stað
+composer.addPass(renderPass);
 composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.4, 1));
 composer.addPass(new OutputPass());
 
@@ -85,6 +88,11 @@ const stigTexti = document.querySelector('#stig');
 const medsli = document.querySelector('#medsli');
 const leiklok = document.querySelector('#leiklok');
 const lokastig = document.querySelector('#lokastig');
+const leiklokTitill = document.querySelector('#leiklok-titill');
+const verkefni = document.querySelector('#verkefni');
+const umBord = document.querySelector('#um-bord');
+const myrkur = document.querySelector('#myrkur');
+const leidbeiningar = document.querySelector('.leidbeiningar');
 
 // allir loaderar fá sama manager svo hann viti hvenær ALLT er komið
 const manager = new THREE.LoadingManager();
@@ -188,19 +196,22 @@ function buaTilVegg(breidd, haed, x, y, z, snuningur) {
   return veggur;
 }
 
-// lóðréttar ljósarendur, festar á vegginn sem börn hans
-function ljosarendur(veggur) {
-  for (const x of [-7.5, -2.5, 2.5, 7.5]) {
-    const rond = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 3), ljosEfni);
-    rond.position.set(x, 0, 0.02);
+// láréttar ljósarendur neðst og efst á veggnum, festar á hann sem börn hans
+function ljosarendur(veggur, breidd) {
+  for (const y of [-VEGG_HAED / 2 + 0.35, VEGG_HAED / 2 - 0.7]) {
+    const rond = new THREE.Mesh(new THREE.PlaneGeometry(breidd, 0.07), ljosEfni);
+    rond.position.set(0, y, 0.02);
     veggur.add(rond);
   }
 }
 
 const H = HALFT_HERBERGI;
-ljosarendur(buaTilVegg(20, VEGG_HAED, -H, VEGG_HAED / 2, 0, Math.PI / 2));    // vestur
-ljosarendur(buaTilVegg(20, VEGG_HAED, H, VEGG_HAED / 2, 0, -Math.PI / 2));    // austur
-ljosarendur(buaTilVegg(20, VEGG_HAED, 0, VEGG_HAED / 2, H, Math.PI));         // suður
+ljosarendur(buaTilVegg(20, VEGG_HAED, -H, VEGG_HAED / 2, 0, Math.PI / 2), 20);    // vestur
+ljosarendur(buaTilVegg(20, VEGG_HAED, 0, VEGG_HAED / 2, H, Math.PI), 20);          // suður
+// austurveggurinn: stórt op (10 x 4,5 m) út í geim sem skipið flýgur út um
+ljosarendur(buaTilVegg(5, VEGG_HAED, H, VEGG_HAED / 2, -7.5, -Math.PI / 2), 5);
+ljosarendur(buaTilVegg(5, VEGG_HAED, H, VEGG_HAED / 2, 7.5, -Math.PI / 2), 5);
+buaTilVegg(10, 1.5, H, 5.25, 0, -Math.PI / 2);
 // norðurveggurinn er í þremur hlutum svo það sé gat (3 x 4 m) fyrir hurðina
 buaTilVegg(8.5, VEGG_HAED, -5.75, VEGG_HAED / 2, -H, 0);
 buaTilVegg(8.5, VEGG_HAED, 5.75, VEGG_HAED / 2, -H, 0);
@@ -224,6 +235,23 @@ scene.add(gangur);
 const gangEndi = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 2.5), rauttEfni);
 gangEndi.position.set(0, 2, -H - 5.9);
 scene.add(gangEndi);
+
+// orkuskjöldur í opinu og geimurinn fyrir utan
+const skjaldarEfni = new THREE.MeshBasicMaterial({ color: 0x4fa8ff, transparent: true, opacity: 0.05, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const skjoldur = new THREE.Mesh(new THREE.PlaneGeometry(10, 4.5), skjaldarEfni);
+skjoldur.position.set(H - 0.05, 2.25, 0);
+skjoldur.rotation.y = -Math.PI / 2;
+scene.add(skjoldur);
+for (const z of [-5.1, 5.1]) {
+  const kantur = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 4.5), ljosEfni);
+  kantur.position.set(H - 0.03, 2.25, z);
+  kantur.rotation.y = -Math.PI / 2;
+  scene.add(kantur);
+}
+scene.add(buaTilStjornur(1500, 300));   // sjást bara í gegnum opið, veggirnir fela hinar
+const utsynisPlaneta = new THREE.Mesh(new THREE.SphereGeometry(60, 48, 24), new THREE.MeshBasicMaterial({ map: plánetuAferd(), fog: false }));
+utsynisPlaneta.position.set(240, -35, 70);
+scene.add(utsynisPlaneta);
 
 const gangLjos = new THREE.PointLight(0xff3322, 0, 8, 1.5);   // kviknar þegar hurðin opnast
 gangLjos.position.set(0, 3, -H - 2);
@@ -255,8 +283,7 @@ function buaTilSulu(x, z) {
 }
 
 buaTilSulu(-4.5, -2.5);
-buaTilSulu(4.5, -2.5);
-buaTilSulu(4.5, 4.5);
+buaTilSulu(1.5, -6.2);
 
 function buaTilKassa(staerd) {
   const kassi = new THREE.Group();
@@ -316,9 +343,9 @@ holoKeila.position.y = 1.64;
 const holoHaldari = new THREE.Group();
 holoHaldari.position.y = 1.75;
 holoBord.add(bordFotur, bordPlata, holoKeila, holoHaldari);
-holoBord.position.set(7.4, 0, 1);
+holoBord.position.set(-7.4, 0, 0.5);
 scene.add(holoBord);
-hindranir.push({ midja: new THREE.Vector3(7.4, 0, 1), radius: 0.75 });
+hindranir.push({ midja: new THREE.Vector3(-7.4, 0, 0.5), radius: 0.75 });
 
 const holoEfni = new THREE.MeshBasicMaterial({ color: 0x4fb4ff, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false });
 
@@ -371,7 +398,7 @@ function buaTilLampa(x, z, styrkur, floktir) {
 }
 
 buaTilLampa(-3, -6, 40, true);   // nálægt droidnum í horninu
-buaTilLampa(1.5, 2.5, 35, true);
+buaTilLampa(5.6, 0, 45, false);   // yfir skipinu
 buaTilLampa(-4.5, 4.5, 30, false);   // yfir stallinum, logar stöðugt
 
 
@@ -397,6 +424,41 @@ const vinstriHurd = hurdarHelmingur(-0.75);
 const haegriHurd = hurdarHelmingur(0.75);
 const HURD_STADA = new THREE.Vector3(0, 0, -H);
 let hurdOpin = false;
+
+
+// ==================== SKIPIÐ Í FLUGSKÝLINU ====================
+
+// skipið stendur á lendingarfótum og vísar út um opið á austurveggnum (+x)
+const skyliSkip = new THREE.Group();
+skyliSkip.position.set(5.6, 1.1, 0);
+skyliSkip.rotation.y = Math.PI / 2;
+let skyliSkipLikan = buaTilSkipslikan();
+skyliSkip.add(skyliSkipLikan);
+for (const [x, z] of [[0, 2.4], [-2.6, -2], [2.6, -2]]) {
+  const fotur = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 1.1, 8), malmur);
+  fotur.position.set(x, -0.55, z);
+  skyliSkip.add(fotur);
+}
+scene.add(skyliSkip);
+const skipKassi = new THREE.Box3();   // árekstrar við skipið, og hvort Anakin er nógu nálægt til að fara um borð
+function maelaSkip() {
+  skyliSkip.updateMatrixWorld(true);
+  skipKassi.setFromObject(skyliSkip);
+}
+maelaSkip();
+kassar.push(skipKassi);
+
+// ef models/skip.glb er til kemur það í stað einfalda líkansins, bæði hér og í geimnum
+hladaModeli(gltfLoader, SKIP_SLOD, SKIP_LENGD, SKIP_SNUNINGUR, (hopur) => {
+  hopur.traverse((h) => {
+    if (h.isMesh) h.castShadow = true;
+  });
+  skyliSkip.remove(skyliSkipLikan);
+  skyliSkipLikan = hopur;
+  skyliSkip.add(hopur);
+  maelaSkip();
+  geimur.nyttSkip(hopur.clone());
+});
 
 
 // ==================== ANAKIN OG GEISLASVERÐIÐ ====================
@@ -664,6 +726,9 @@ r2.position.set(1.5, 0, 8.5);
 scene.add(r2);
 let r2Model = null;
 let r2Hvelfing = null;   // snúningsás í miðju hvelfingarinnar
+const r2HvelfingGrunnur = new THREE.Quaternion();   // halli hvelfingarinnar áður en henni er snúið
+let r2HvelfingHorn = 0;
+const Y_AS = new THREE.Vector3(0, 1, 0);
 
 gltfLoader.load('models/star_wars_r2-d2/scene.gltf', (gltf) => {
   r2Model = gltf.scene;
@@ -677,19 +742,25 @@ gltfLoader.load('models/star_wars_r2-d2/scene.gltf', (gltf) => {
   r2.add(r2Model);
   r2.updateMatrixWorld(true);
 
-  // Hvelfingin snýst ekki um eigin miðju í módelinu og ljósin á henni eru sér hlutir.
-  // Því er búinn til tómur hópur í miðju hvelfingarinnar og allir hlutir sem eru ofar en
-  // neðsti punktur hvelfingarinnar færðir undir hann með attach()
+  // Í módelinu hallar R2 sér 22° aftur (eins og þegar hann gengur á tveimur fótum) og hvelfingin snýst
+  // ekki um eigin miðju. Því er búinn til tómur hópur í miðju hvelfingarinnar, honum hallað eins og búknum
+  // (y-ás hans = upp-ás búksins) og hlutar hvelfingarinnar færðir undir hann með attach().
+  // Svo er hópnum snúið um sinn eigin y-ás, eins og alvöru R2 snýr hausnum.
+  const kroppur = r2Model.getObjectByName('body_Baked_3');
   const hvelfing = r2Model.getObjectByName('dome_Baked_7');
-  const kassi = new THREE.Box3().setFromObject(hvelfing);
+  const midja = new THREE.Box3().setFromObject(hvelfing).getCenter(new THREE.Vector3());
+  const uppAs = new THREE.Vector3(0, 1, 0).transformDirection(kroppur.matrixWorld)
+    .transformDirection(r2Model.matrixWorld.clone().invert());   // upp-ás búksins í hnitum módelsins
   r2Hvelfing = new THREE.Group();
-  r2Hvelfing.position.copy(r2Model.worldToLocal(kassi.getCenter(new THREE.Vector3())));
+  r2Hvelfing.position.copy(r2Model.worldToLocal(midja));
+  r2Hvelfing.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), uppAs);
+  r2HvelfingGrunnur.copy(r2Hvelfing.quaternion);
   r2Model.add(r2Hvelfing);
-  const hlutar = [];
-  r2Model.traverse((h) => {
-    if (h.isMesh && new THREE.Box3().setFromObject(h).getCenter(new THREE.Vector3()).y > kassi.min.y) hlutar.push(h);
-  });
-  for (const h of hlutar) r2Hvelfing.attach(h);
+  r2Model.updateMatrixWorld(true);
+  for (const nafn of ['dome_Baked_7', 'lenses_Baked_6', 'Cylinder001_9']) {
+    const hluti = r2Model.getObjectByName(nafn);
+    if (hluti) r2Hvelfing.attach(hluti);
+  }
 });
 
 const r2Mark = new THREE.Vector3();
@@ -734,8 +805,10 @@ function uppfaeraR2(delta, nuna) {
     }
   }
   const horn = Math.atan2(markHlutur.position.x - r2.position.x, markHlutur.position.z - r2.position.z) - r2.rotation.y;
-  const hvelfingMunur = Math.atan2(Math.sin(horn - r2Hvelfing.rotation.y), Math.cos(horn - r2Hvelfing.rotation.y));
-  r2Hvelfing.rotation.y += hvelfingMunur * Math.min(1, 3 * delta);
+  const hvelfingMunur = Math.atan2(Math.sin(horn - r2HvelfingHorn), Math.cos(horn - r2HvelfingHorn));
+  r2HvelfingHorn += hvelfingMunur * Math.min(1, 3 * delta);
+  // fyrst hallinn, svo snúningur um hallandi ásinn
+  r2Hvelfing.quaternion.copy(r2HvelfingGrunnur).multiply(new THREE.Quaternion().setFromAxisAngle(Y_AS, r2HvelfingHorn));
 }
 
 
@@ -791,6 +864,25 @@ function spila(hljod) {
 }
 
 
+// ==================== GEIMURINN ====================
+
+// allt sem gerist í geimnum er í geimur.js
+let tieSigradar = 0;
+const geimur = buaTilGeimsins({
+  gltfLoader,
+  audioLoader,
+  listener,
+  spila,
+  meidast,
+  fekkStig: () => {
+    tieSigradar += 1;
+    uppfaeraStodu();
+  },
+  sigur: () => leikslok(true),
+  erLokid: () => leikLokid,
+});
+
+
 // ==================== ANIME.JS HREYFINGAR ====================
 
 // loftljósin flökta óreglulega: hver tween velur nýtt handahófskennt gildi og kallar svo á sjálfa sig aftur
@@ -820,6 +912,9 @@ animate(augaLjos, { intensity: [2, 8], duration: 900, loop: true, alternate: tru
 // skannaði hluturinn og heilmyndin snúast hægt
 animate(hlutHaldari, { rotateY: 360, duration: 14000, loop: true, ease: 'linear' });
 animate(holoHaldari, { rotateY: 360, duration: 18000, loop: true, ease: 'linear' });
+
+// orkuskjöldurinn í opinu glitrar
+animate(skjaldarEfni, { opacity: [0.03, 0.09], duration: 1300, loop: true, alternate: true, ease: 'inOutSine' });
 
 // heilmyndin flöktir öðru hvoru eins og sendingin sé slæm
 function holoFlokt() {
@@ -1140,7 +1235,7 @@ function hoggHittir() {
 }
 
 function sveifla() {
-  if (!sverdKveikt || leikLokid) return;
+  if (!sverdKveikt || leikLokid || svaedi !== 'skyli') return;
   if (!handarHreyfing(hreyfingar.hogg)) return;
   spila(sveifluHljod);
   setTimeout(hoggHittir, 200);       // sverðið hittir um miðja hreyfingu
@@ -1151,20 +1246,45 @@ function meidast(magn) {
   uppfaeraStodu();
   animate(medsli, { opacity: [0.7, 0], duration: 500, ease: 'outQuad' });
   animate(camera, { x: [0, 0.14, -0.1, 0.05, 0], duration: 300 });   // myndavélin hristist
-  if (lif === 0) {
-    leikLokid = true;
-    lokastig.textContent = `Þú sigraðir ${stig} droida`;
-    leiklok.hidden = false;
-    skiptaUmHreyfingu(hreyfingar.kyrr);
-  }
+  if (lif === 0) leikslok(false);
+}
+
+function leikslok(vann) {
+  leikLokid = true;
+  leiklokTitill.textContent = vann ? 'Þú vannst!' : 'Myrka hliðin sigraði';
+  leiklok.classList.toggle('sigur', vann);
+  lokastig.textContent = `Þú sigraðir ${stig} battle droida og ${tieSigradar} TIE flaugar`;
+  leiklok.hidden = false;
+  skiptaUmHreyfingu(hreyfingar.kyrr);
+  geimur.skjota(false);
 }
 
 function uppfaeraStodu() {
   lifFylling.style.width = lif + '%';
-  stigTexti.textContent = `Droidar sigraðir: ${stig}`;
+  stigTexti.textContent = svaedi === 'geimur' ? `TIE sigraðar: ${tieSigradar}` : `Droidar sigraðir: ${stig}`;
+  if (svaedi !== 'skyli') verkefni.textContent = 'Eyddu öllum TIE flaugunum';
+  else if (stig < DROIDAR_TIL_AD_OPNA) verkefni.textContent = `Sigraðu ${DROIDAR_TIL_AD_OPNA} battle droida (${stig}/${DROIDAR_TIL_AD_OPNA})`;
+  else verkefni.textContent = 'Skipið er tilbúið, farðu um borð!';
 }
 
 function byrjaUpp() {
+  if (svaedi !== 'skyli') {
+    // aftur úr geimnum inn í flugskýlið
+    geimur.stoppa();
+    renderPass.scene = scene;
+    renderPass.camera = camera;
+    camera.add(listener);
+    anakin.visible = true;
+    r2.visible = true;
+    skyliSkip.position.set(5.6, 1.1, 0);
+    skyliSkip.rotation.set(0, Math.PI / 2, 0);
+    maelaSkip();
+    svaedi = 'skyli';
+    stillaTakka();
+    spila(umhverfisHljod);
+    spila(droidHljod);
+  }
+  tieSigradar = 0;
   for (const o of ovinir) scene.remove(o.hopur);
   ovinir.length = 0;
   for (const s of skot) scene.remove(s.bolti);
@@ -1190,15 +1310,17 @@ document.querySelector('#aftur').addEventListener('click', byrjaUpp);
 const takkar = new Set();   // takkar sem er haldið niðri
 let markmid = null;         // staður sem var smellt á (point-and-click)
 let leikurByrjadur = false;
+let svaedi = 'skyli';       // 'skyli' (flugskýlið), 'flugtak' eða 'geimur'
 
 window.addEventListener('keydown', (e) => {
   takkar.add(e.code);
-  if (!leikurByrjadur) return;
+  if (!leikurByrjadur || svaedi !== 'skyli') return;
   if (e.code === 'Space') {
     e.preventDefault();
     sveifla();
   }
   if (e.code === 'KeyF' && !e.repeat) kveikjaASverdi(!sverdKveikt);
+  if (e.code === 'KeyE') faraUmBord();
 });
 window.addEventListener('keyup', (e) => takkar.delete(e.code));
 window.addEventListener('blur', () => takkar.clear());
@@ -1208,7 +1330,7 @@ const raycaster = new THREE.Raycaster();
 const benditill = new THREE.Vector2();
 
 renderer.domElement.addEventListener('pointerdown', (e) => {
-  if (!leikurByrjadur || leikLokid) return;
+  if (!leikurByrjadur || leikLokid || svaedi !== 'skyli') return;
   benditill.x = (e.clientX / window.innerWidth) * 2 - 1;
   benditill.y = -(e.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(benditill, camera);
@@ -1219,8 +1341,66 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
   synaSmell(markmid);
 });
 
-document.querySelector('#takki-sveifla').addEventListener('click', sveifla);
-document.querySelector('#takki-sverd').addEventListener('click', () => kveikjaASverdi(!sverdKveikt));
+// takkarnir á skjánum gera annað í geimnum: Skjóta (haldið inni) og Hraði (haldið inni)
+const takkiSveifla = document.querySelector('#takki-sveifla');
+const takkiSverd = document.querySelector('#takki-sverd');
+takkiSveifla.addEventListener('pointerdown', () => (svaedi === 'geimur' ? geimur.skjota(true) : sveifla()));
+takkiSverd.addEventListener('pointerdown', () => (svaedi === 'geimur' ? geimur.hradaukning(true) : kveikjaASverdi(!sverdKveikt)));
+for (const atburdur of ['pointerup', 'pointerleave', 'pointercancel']) {
+  takkiSveifla.addEventListener(atburdur, () => geimur.skjota(false));
+  takkiSverd.addEventListener(atburdur, () => geimur.hradaukning(false));
+}
+umBord.addEventListener('click', () => faraUmBord());
+
+const LEIDBEININGAR_SKYLI = leidbeiningar.innerHTML;
+function stillaTakka() {
+  const geim = svaedi === 'geimur';
+  takkiSveifla.textContent = geim ? 'Skjóta' : 'Sveifla';
+  takkiSverd.textContent = geim ? 'Hraði' : 'Sverð';
+  leidbeiningar.innerHTML = geim
+    ? '<span class="lyklabord"><b>WASD / örvar</b> eða <b>mús</b> stýra · <b>bil / smellur</b> skjóta · <b>Shift</b> hraði<br></span><b>Dragðu fingur</b> til að stýra · <b>rauðu merkin</b> sýna hvar TIE flaugarnar eru'
+    : LEIDBEININGAR_SKYLI;
+  uppfaeraStodu();
+}
+
+
+// ==================== UM BORÐ OG FLUGTAK ====================
+
+// anime.js hreyfingar eru "thenable", svo hægt er að bíða eftir þeim með await og láta þær gerast í röð
+async function faraUmBord() {
+  if (svaedi !== 'skyli' || stig < DROIDAR_TIL_AD_OPNA || leikLokid) return;
+  svaedi = 'flugtak';
+  umBord.hidden = true;
+  verkefni.textContent = '';
+
+  await animate(myrkur, { opacity: [0, 1], duration: 450 });
+  // Anakin og R2 eru komnir um borð, droidarnir hverfa
+  anakin.visible = false;
+  r2.visible = false;
+  for (const o of ovinir) scene.remove(o.hopur);
+  ovinir.length = 0;
+  for (const s of skot) scene.remove(s.bolti);
+  skot.length = 0;
+  if (sverdKveikt) kveikjaASverdi(false);
+  anakin.position.set(3.5, 0, 6.5);   // myndavélin eltir þennan stað og sér skipið frá hlið
+  await animate(myrkur, { opacity: 0, duration: 450 });
+
+  spila(hurdHljod);
+  await animate(skyliSkip, { y: 2.6, rotateX: -4, duration: 1700, ease: 'inOutSine' });   // tekur á loft
+  await animate(skyliSkip, { x: 45, duration: 1800, ease: 'inQuad' });                     // og flýgur út um opið
+  await animate(myrkur, { opacity: 1, duration: 400 });
+
+  // yfir í geiminn: teikna geimsenuna og færa eyrun (AudioListener) yfir á geimmyndavélina
+  svaedi = 'geimur';
+  renderPass.scene = geimur.sena;
+  renderPass.camera = geimur.myndavel;
+  geimur.myndavel.add(listener);
+  umhverfisHljod.stop();
+  droidHljod.stop();
+  stillaTakka();
+  geimur.byrja();
+  await animate(myrkur, { opacity: 0, duration: 700 });
+}
 
 const att = new THREE.Vector3();
 const gamlaStada = new THREE.Vector3();
@@ -1295,6 +1475,8 @@ byrjaTakki.addEventListener('click', async () => {
   umhverfisHljod.play();
   droidHljod.play();
   kveikjaASverdi(true);
+  verkefni.hidden = false;
+  uppfaeraStodu();
 
   // Star Wars merkið flýgur burt inn í þokuna
   merkiHopur.visible = true;
@@ -1315,7 +1497,14 @@ renderer.setAnimationLoop((timi) => {
   const delta = Math.min(timer.getDelta(), 0.1);   // ekki stór stökk ef flipinn var í bakgrunni
   const nuna = timer.getElapsed();
 
-  if (leikurByrjadur && !leikLokid) {
+  // í geimnum sér geimur.js um allt
+  if (svaedi === 'geimur') {
+    geimur.uppfaera(delta, nuna);
+    composer.render();
+    return;
+  }
+
+  if (leikurByrjadur && !leikLokid && svaedi === 'skyli') {
     hreyfaAnakin(delta);
 
     // nýr battle droid kemur inn um hurðina öðru hvoru, oftar eftir því sem stigin hækka
@@ -1325,7 +1514,11 @@ renderer.setAnimationLoop((timi) => {
       naestiOvinur = nuna + Math.max(2.5, 6 - stig * 0.25);
     }
   }
-  if (leikurByrjadur) athugaHurd();
+  if (leikurByrjadur && svaedi === 'skyli') {
+    athugaHurd();
+    // nógu nálægt skipinu og búinn að sigra nógu marga droida: sýna "Fara um borð"
+    umBord.hidden = leikLokid || stig < DROIDAR_TIL_AD_OPNA || skipKassi.distanceToPoint(anakin.position) > 1.6;
+  }
   uppfaeraOvini(delta, nuna);
   uppfaeraR2(delta, nuna);
   if (leikurByrjadur && nuna > naestaPip) {
@@ -1352,4 +1545,5 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
+  geimur.stilla();
 });

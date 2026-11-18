@@ -259,6 +259,143 @@ h1 {
   box-shadow: 0 0 14px #ff3020;
 }
 
+#leiklok.sigur h2 {
+  color: #ffe81f;
+}
+
+/* ---------- verkefni og um borð ---------- */
+
+#verkefni {
+  position: fixed;
+  top: 44px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0 16px;
+  text-align: center;
+  color: #ffe81f;
+  font-size: 0.85rem;
+  text-shadow: 0 0 6px #000;
+  pointer-events: none;
+}
+
+#um-bord {
+  position: fixed;
+  left: 50%;
+  bottom: 38%;
+  transform: translateX(-50%);
+  padding: 0.7em 1.8em;
+  border: 2px solid #ffe81f;
+  border-radius: 999px;
+  background: #05070dcc;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 0 16px #ffe81f88;
+  animation: glodir-gult 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes glodir-gult {
+  to {
+    box-shadow: 0 0 30px #ffe81f;
+  }
+}
+
+#myrkur {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- geimurinn ---------- */
+
+#geim-hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+#mid {
+  position: absolute;
+  left: -18px;
+  top: -18px;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #8fd0ff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #2f8cff;
+}
+
+#mid::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #8fd0ff;
+}
+
+.ovinamerki {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #ff4a3a;
+  border-radius: 4px;
+}
+
+/* ör við jaðarinn þegar óvinurinn er ekki á skjánum */
+.ovinamerki.utan {
+  left: -10px;
+  top: -10px;
+  width: 0;
+  height: 0;
+  border: 10px solid transparent;
+  border-left: 16px solid #ff4a3a;
+  border-radius: 0;
+}
+
+#geim-texti {
+  position: absolute;
+  top: 70px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+#tilkynning {
+  position: absolute;
+  top: 30%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: #ffe81f;
+  font-size: clamp(1.4rem, 5vw, 2.4rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  opacity: 0;
+}
+
+#vidvorun {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: #ff4a3a;
+  font-size: 1.1rem;
+}
+
 /* á snertiskjá er ekkert lyklaborð, þá eru bara takkarnir og pikk á gólfið */
 @media (pointer: coarse) {
   .lyklabord {

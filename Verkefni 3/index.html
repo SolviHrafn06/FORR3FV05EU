@@ -39,12 +39,27 @@
     <div id="stig">Droidar sigraðir: 0</div>
   </div>
 
+  <!-- hvað á að gera næst, og takki til að fara um borð í skipið -->
+  <p id="verkefni" hidden></p>
+  <button id="um-bord" hidden>Fara um borð <span class="lyklabord">(E)</span></button>
+
+  <!-- það sem sést bara í geimnum: mið, merki á óvinunum, hraði og bylgja -->
+  <div id="geim-hud" hidden>
+    <div id="mid"></div>
+    <p id="geim-texti"></p>
+    <p id="tilkynning"></p>
+    <p id="vidvorun" hidden>Of langt frá — snýr við</p>
+  </div>
+
+  <!-- svartur skjár sem dofnar inn og út þegar skipt er um svæði -->
+  <div id="myrkur"></div>
+
   <!-- rauður skjár sem blikkar þegar Anakin verður fyrir skoti -->
   <div id="medsli"></div>
 
   <!-- birtist þegar lífið klárast -->
   <div id="leiklok" hidden>
-    <h2>Myrka hliðin sigraði</h2>
+    <h2 id="leiklok-titill">Myrka hliðin sigraði</h2>
     <p id="lokastig"></p>
     <button id="aftur">Reyna aftur</button>
   </div>

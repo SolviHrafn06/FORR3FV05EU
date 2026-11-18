@@ -1,7 +1,7 @@
 # Dularfulla herbergið – útskýringar á kóðanum
 
 Þetta skjal er til að **læra** hvað allt gerir svo þú getir útskýrt það fyrir kennaranum.
-Lestu það með `js/main.js`, `js/hreyfiklippur.js` og `verkfaeri/flytja-hreyfingar.html` opin hlið við hlið. `main.js` er skipt í kafla með fyrirsögnum eins og `// ==================== HLJÓÐ ====================` og hér er vísað í þá kafla og nöfn fallanna.
+Lestu það með `js/main.js`, `js/geimur.js`, `js/hreyfiklippur.js` og `verkfaeri/flytja-hreyfingar.html` opin hlið við hlið. `main.js` er skipt í kafla með fyrirsögnum eins og `// ==================== HLJÓÐ ====================` og hér er vísað í þá kafla og nöfn fallanna.
 
 ---
 
@@ -16,6 +16,15 @@ Lestu það með `js/main.js`, `js/hreyfiklippur.js` og `verkfaeri/flytja-hreyfi
 7. Þegar lífið klárast birtist „Myrka hliðin sigraði“ og hægt er að reyna aftur.
 8. **R2-D2** rúllar á eftir Anakin, vaggar til hliðanna, snýr hvelfingunni að næsta droid og pípir öðru hvoru.
 9. Á meðan: ljósin í loftinu **flökta**, könnunar-droidinn í horninu **svífur og snýr sér að Anakin**, Millennium Falcon snýst sem **heilmynd**.
+
+---
+
+### Seinni hlutinn: geimurinn
+
+10. Þegar 5 droidar eru sigraðir birtist **Fara um borð** nálægt skipinu (eða E).
+11. Skjárinn dökknar, Anakin og R2 eru komnir um borð, skipið tekur á loft og flýgur út um opið á austurveggnum.
+12. Í geimnum stýrir maður skipinu með mús, fingri eða WASD. TIE flaugar koma í 5 bylgjum, elta skipið, forða sér þegar þær eru of nálægt og skjóta grænum skotum.
+13. Eftir 5 bylgjur: „Þú vannst!“. Ef lífið klárast: „Myrka hliðin sigraði“ og „Reyna aftur“ fer aftur í flugskýlið.
 
 ---
 
@@ -163,7 +172,7 @@ scene
 - **`meidast()`**: rauður skjár blikkar (anime.js virkar líka á HTML).
 
 ### R2-D2 (FÉLAGINN)
-- Hvelfingin í módelinu snýst ekki um eigin miðju og ljósin á henni eru sér hlutir. Því er búinn til tómur hópur `r2Hvelfing` í miðju hvelfingarinnar (`Box3`) og allir hlutir sem eru ofar en neðsti punktur hennar færðir undir hann með `attach()`. Þá snýst öll hvelfingin rétt.
+- Í módelinu hallar R2 sér 22° aftur (göngustaða) og hvelfingin snýst ekki um eigin miðju. Því er búinn til tómur hópur `r2Hvelfing` í miðju hvelfingarinnar, honum hallað eins og búknum (`setFromUnitVectors(upp, upp-ás búksins)`) og hlutar hvelfingarinnar (`dome`, `lenses`, `Cylinder001`) færðir undir hann með `attach()`. Í hverjum ramma: `quaternion = halli · snúningur um y`, svo hausinn snýst um hallandi ásinn eins og á alvöru R2.
 - **`uppfaeraR2()`**: markið er `anakin.localToWorld(1, 0, -1.4)`, þ.e. fyrir aftan Anakin og vinstra megin. Hraðinn eykst og minnkar mjúklega (`r2Hradi += (oskHradi - r2Hradi) * ...`), svo hann tekur ekki snögga kippi. Hann notar sömu árekstra og Anakin.
 - Hvelfingin snýr að næsta lifandi droid (annars að Anakin) og `r2Model.rotation.z = sin(tími) * ...` lætur hann vagga þegar hann rúllar.
 
@@ -179,6 +188,12 @@ scene
 - **`hoggHittir()`**: kallað 200 ms eftir að höggið byrjar. Sigrar droida sem eru nær en 2,4 m og fyrir framan Anakin.
 - Nýir droidar koma oftar og fleiri í einu eftir því sem `stig` hækka (í lykkjunni).
 
+### SKIPIÐ Í FLUGSKÝLINU, UM BORÐ OG FLUGTAK
+- `skyliSkip` stendur á lendingarfótum og vísar út um opið. `skipKassi` (`Box3`) er bæði árekstur og svæðið þar sem **Fara um borð** birtist.
+- **`faraUmBord()`** er `async` fall. anime.js hreyfingar eru „thenable“, svo `await animate(...)` bíður þar til hreyfingin klárast: dökkna → fela Anakin og R2 → lýsa → skipið lyftist → flýgur út → dökkna → skipta yfir í geiminn → lýsa.
+- **Skipt um senu:** `renderPass.scene = geimur.sena` og `renderPass.camera = geimur.myndavel`. Bloom og allt annað virkar áfram. `geimur.myndavel.add(listener)` færir eyrun yfir á geimmyndavélina.
+- `svaedi` ('skyli', 'flugtak', 'geimur') segir hvaða hluti leiksins er í gangi, svo takkar og lykkjan geri rétt.
+
 ### STÝRING
 - `takkar` er `Set` af tökkum sem er haldið niðri, svo W + A virka saman.
 - `pointerdown` + `Raycaster` finnur hvar á gólfinu var smellt → `markmid`.
@@ -189,7 +204,23 @@ scene
 
 ---
 
-## 4. Hreyfingarnar: mocap + beinagrind
+## 4. `geimur.js`: geimurinn
+
+`buaTilGeimsins({...})` býr til allt og skilar viðmóti (`sena`, `myndavel`, `byrja()`, `stoppa()`, `uppfaera()`, `skjota()`, `hradaukning()`). main.js sendir inn það sem geimurinn þarf frá hinum hlutanum (`meidast`, `spila`, `listener` o.fl.).
+
+- **Senan:** stjörnur (`Points` á stórri kúlu), stjörnuþokur (`Sprite` með mjúkum bletti teiknuðum á `canvas`), pláneta með `CanvasTexture` og lofthjúpi (stærri kúla, `BackSide`, `AdditiveBlending`), 70 loftsteinar (íkosahedra þar sem hornpunktarnir eru færðir til af handahófi, `mergeVertices` svo engar rifur myndist).
+- **Geimryk:** 500 punktar nálægt skipinu. Punktur sem fer meira en 60 m frá skipinu er færður hinum megin, svo það er alltaf ryk í kringum skipið og maður sér hraðann.
+- **Flugið (`fljuga()`):** `skip.rotation.order = 'YXZ'`: snúið til hliðar um y (beygja) og upp/niður um x (takmarkað við ±69°), svo sjóndeildarhringurinn helst beinn og það er auðvelt að stýra. `skipHalli` hallar skipinu inn í beygjur (bara útlit). Beygjuhraðinn nálgast það sem beðið er um smám saman (tregða). Áfram: `Z_AS.applyQuaternion(skip.quaternion)`.
+- **Myndavélin** eltir skipið: staða `skip.localToWorld(0, 3, -12)` með `lerp`, horfir á punkt 40 m fyrir framan. Sjónsviðið (`fov`) stækkar með hraðanum.
+- **Skot:** tvær byssur til skiptis. Miðunaraðstoð: ef TIE er nær en ~8° frá stefnu skipsins er miðað þangað sem hún *verður* þegar skotið nær henni. Árekstrar með `Line3` eins og í flugskýlinu.
+- **TIE gervigreind (`uppfaeraTie()`):** tvær stöður. *atak:* fljúga að skipinu og skjóta ef það er beint fyrir framan (með smá skekkju). *forda:* ef nær en 40 m, fljúga burt í handahófskennda átt í 2–3,5 sek. `quaternion.rotateTowards()` takmarkar hversu hratt hún getur beygt.
+- **Sprengingar:** blossi (kúla sem stækkar og dofnar) og brak sem flýgur út og snýst, allt með anime.js.
+- **Merki á skjánum:** staða hverrar TIE er varpað á skjáinn með `.project(myndavel)`. Ef hún er fyrir aftan eða utan skjás birtist ör við jaðarinn.
+- **Bylgjur:** bylgja *n* hefur 2 + *n* TIE flaugar sem birtast 380 m fyrir framan skipið.
+
+---
+
+## 5. Hreyfingarnar: mocap + beinagrind
 
 Anakin og B1 komu með beinagrind (bein fyrir læri, hné, handleggi …) en **engar hreyfingar**.
 
@@ -225,7 +256,7 @@ Xbot módelið í dæmum three.js er með alvöru hreyfingar (idle, walk, run) t
 
 ---
 
-## 5. Ef eitthvað lítur skringilega út
+## 6. Ef eitthvað lítur skringilega út
 
 | Vandamál | Lausn |
 | --- | --- |
