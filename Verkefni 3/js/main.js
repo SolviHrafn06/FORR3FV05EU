@@ -656,6 +656,89 @@ gltfLoader.load('models/star_wars_-_logo/scene.gltf', (gltf) => {
 });
 
 
+// ==================== R2-D2 (FÉLAGINN) ====================
+
+// R2 eltir Anakin, vaggar til hliðanna þegar hann rúllar og snýr hvelfingunni að næsta óvini
+const r2 = new THREE.Group();
+r2.position.set(1.5, 0, 8.5);
+scene.add(r2);
+let r2Model = null;
+let r2Hvelfing = null;   // snúningsás í miðju hvelfingarinnar
+
+gltfLoader.load('models/star_wars_r2-d2/scene.gltf', (gltf) => {
+  r2Model = gltf.scene;
+  setjaIRettanSkala(r2Model, 1.09);   // R2-D2 er 1,09 m á hæð
+  r2Model.traverse((h) => {
+    if (h.isMesh) {
+      h.castShadow = true;
+      h.receiveShadow = true;
+    }
+  });
+  r2.add(r2Model);
+  r2.updateMatrixWorld(true);
+
+  // Hvelfingin snýst ekki um eigin miðju í módelinu og ljósin á henni eru sér hlutir.
+  // Því er búinn til tómur hópur í miðju hvelfingarinnar og allir hlutir sem eru ofar en
+  // neðsti punktur hvelfingarinnar færðir undir hann með attach()
+  const hvelfing = r2Model.getObjectByName('dome_Baked_7');
+  const kassi = new THREE.Box3().setFromObject(hvelfing);
+  r2Hvelfing = new THREE.Group();
+  r2Hvelfing.position.copy(r2Model.worldToLocal(kassi.getCenter(new THREE.Vector3())));
+  r2Model.add(r2Hvelfing);
+  const hlutar = [];
+  r2Model.traverse((h) => {
+    if (h.isMesh && new THREE.Box3().setFromObject(h).getCenter(new THREE.Vector3()).y > kassi.min.y) hlutar.push(h);
+  });
+  for (const h of hlutar) r2Hvelfing.attach(h);
+});
+
+const r2Mark = new THREE.Vector3();
+let r2Hradi = 0;
+
+function uppfaeraR2(delta, nuna) {
+  if (!r2Model) return;
+  // R2 vill vera fyrir aftan Anakin, vinstra megin (í hnitum Anakins er +x vinstri og -z aftur)
+  anakin.localToWorld(r2Mark.set(1.0, 0, -1.4));
+  r2Mark.x = Math.max(-MORK, Math.min(MORK, r2Mark.x));
+  r2Mark.z = Math.max(-MORK, Math.min(MORK, r2Mark.z));
+  r2Mark.y = 0;
+
+  const att = r2Mark.sub(r2.position);
+  const fjarlaegd = att.length();
+  // hraðinn eykst og minnkar mjúklega, R2 getur ekki stoppað á punktinum
+  const oskHradi = fjarlaegd > 0.4 ? Math.min(3.5, fjarlaegd * 1.8) : 0;
+  r2Hradi += (oskHradi - r2Hradi) * Math.min(1, 4 * delta);
+
+  if (r2Hradi > 0.05) {
+    att.normalize();
+    const markHorn = Math.atan2(att.x, att.z);
+    const munur = Math.atan2(Math.sin(markHorn - r2.rotation.y), Math.cos(markHorn - r2.rotation.y));
+    r2.rotation.y += munur * Math.min(1, 6 * delta);
+    const skref = r2Hradi * delta;
+    r2.position.x += att.x * skref;
+    if (rekstA(r2.position, 0.35)) r2.position.x -= att.x * skref;
+    r2.position.z += att.z * skref;
+    if (rekstA(r2.position, 0.35)) r2.position.z -= att.z * skref;
+  }
+  // vagg til hliðanna, meira eftir því sem hann fer hraðar
+  r2Model.rotation.z = Math.sin(nuna * 9) * 0.06 * Math.min(1, r2Hradi / 2);
+
+  // hvelfingin snýr að næsta battle droid, annars að Anakin
+  let markHlutur = anakin;
+  let naest = Infinity;
+  for (const o of ovinir) {
+    const d = o.lifandi ? o.hopur.position.distanceTo(r2.position) : Infinity;
+    if (d < naest) {
+      naest = d;
+      markHlutur = o.hopur;
+    }
+  }
+  const horn = Math.atan2(markHlutur.position.x - r2.position.x, markHlutur.position.z - r2.position.z) - r2.rotation.y;
+  const hvelfingMunur = Math.atan2(Math.sin(horn - r2Hvelfing.rotation.y), Math.cos(horn - r2Hvelfing.rotation.y));
+  r2Hvelfing.rotation.y += hvelfingMunur * Math.min(1, 3 * delta);
+}
+
+
 // ==================== HLJÓÐ ====================
 
 const listener = new THREE.AudioListener();
@@ -668,10 +751,13 @@ const sveifluHljod = new THREE.PositionalAudio(listener);
 const endurkastHljod = new THREE.PositionalAudio(listener);
 const droidHljod = new THREE.PositionalAudio(listener);
 const hurdHljod = new THREE.PositionalAudio(listener);
+const r2Hljod = new THREE.PositionalAudio(listener);
 
 geislasverd.add(sverdHljod, kveikjaHljod, sveifluHljod, endurkastHljod);
 droid.add(droidHljod);
 hurd.add(hurdHljod);
+r2.add(r2Hljod);
+r2Hljod.setRefDistance(2);
 for (const hljod of [sverdHljod, kveikjaHljod, sveifluHljod, endurkastHljod]) hljod.setRefDistance(6);
 droidHljod.setRefDistance(1.5);
 hurdHljod.setRefDistance(3);
@@ -691,6 +777,7 @@ hladaHljodi(sveifluHljod, 'hljod/sveifla.mp3', false, 0.9);
 hladaHljodi(endurkastHljod, 'hljod/endurkast.mp3', false, 0.9);
 hladaHljodi(droidHljod, 'hljod/droid.mp3', true, 1);
 hladaHljodi(hurdHljod, 'hljod/hurd.mp3', false, 1);
+hladaHljodi(r2Hljod, 'hljod/r2.mp3', false, 0.8);
 
 // hljóð battle droidanna: hver droid fær sitt eigið PositionalAudio en þeir deila sömu bufferunum
 const bufferar = {};
@@ -1027,6 +1114,7 @@ function sigra(o) {
   o.hljod.setBuffer(bufferar.sprenging);
   spila(o.hljod);
   neistar(o.hopur.position.clone().setY(1.3));
+  if (Math.random() < 0.5) setTimeout(() => spila(r2Hljod), 600);   // R2 fagnar
   animate(o.velta, { rotateX: -90, rotateZ: utils.random(-30, 30), duration: 700, ease: 'outBounce' });   // dettur aftur á bak, aðeins á ská
   animate(o.hopur, {
     y: -0.6,
@@ -1087,6 +1175,7 @@ function byrjaUpp() {
   anakin.position.set(0, 0, 7);
   anakin.rotation.y = Math.PI;
   markmid = null;
+  r2.position.set(1.5, 0, 8.5);
   naestiOvinur = timer.getElapsed() + 3;
   leikLokid = false;
   leiklok.hidden = true;
@@ -1218,6 +1307,7 @@ byrjaTakki.addEventListener('click', async () => {
 const timer = new THREE.Timer();
 timer.connect(document);
 const myndavelarMark = new THREE.Vector3();
+let naestaPip = 8;   // hvenær R2 pípir næst
 myndavelarRig.position.copy(anakin.position);
 
 renderer.setAnimationLoop((timi) => {
@@ -1237,6 +1327,11 @@ renderer.setAnimationLoop((timi) => {
   }
   if (leikurByrjadur) athugaHurd();
   uppfaeraOvini(delta, nuna);
+  uppfaeraR2(delta, nuna);
+  if (leikurByrjadur && nuna > naestaPip) {
+    spila(r2Hljod);
+    naestaPip = nuna + utils.random(9, 18, 2);
+  }
   uppfaeraSkot(delta);
   if (mixer) mixer.update(delta);
   droidMixer.update(delta);

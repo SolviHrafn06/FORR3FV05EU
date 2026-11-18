@@ -2,7 +2,7 @@
 
 Lítill 3D leikur í Three.js (r187). Anakin Skywalker stendur í dimmu herbergi í geimstöð með geislasverð sem lýsir upp myrkrið.
 B1 battle droidar ganga inn um hurðina og skjóta á hann. Anakin slær skotin til baka með sverðinu eða heggur droidana.
-Í horninu svífur könnunar-droid sem snýr sér alltaf að honum, ljósin flökta og Millennium Falcon snýst sem heilmynd á borði.
+R2-D2 rúllar á eftir honum og fylgist með óvinunum. Í horninu svífur könnunar-droid sem snýr sér alltaf að honum, ljósin flökta og Millennium Falcon snýst sem heilmynd á borði.
 
 Þemað er „Dularfulla herbergið“ í Star Wars búningi: næstum tómt herbergi, þrjár súlur, þoka (`FogExp2`), ljósgjafi í hendi karaktersins og furðuleg vera í horninu sem snýr sér að honum með `.lookAt()`.
 
@@ -38,7 +38,7 @@ Verkefni 3/
   hreyfingar/           hreyfingar.json: mocap ganga, hlaup og kyrrstaða, flutt yfir á Anakin og B1
   models/               módelin (sjá models/LESTU-MIG.md)
   aferdir/              golf.png og veggur.png (TextureLoader)
-  hljod/                9 hljóð (AudioLoader)
+  hljod/                10 hljóð (AudioLoader)
   verkfaeri/            python skrifta (hljóð og áferðir) og flytja-hreyfingar.html (mocap → Anakin/B1)
   UTSKYRINGAR.md        útskýringar á öllum kóðanum
 ```
@@ -54,6 +54,7 @@ Three.js 0.187.0 og Anime.js 4.5.0 (með Three.js adapter) eru sótt af CDN (jsd
 - **B1 Battle Droid** eftir leoxx300
 - **Millennium Falcon** eftir fredbear1211
 - **Star Wars Logo** eftir David Tena C.
+- **Star Wars R2-D2** eftir tegnemaskin
 - **Hreyfingar (idle, walk, run):** af Xbot módelinu í dæmum [three.js](https://github.com/mrdoob/three.js) (hreyfiföngun frá Mixamo), fluttar yfir á Anakin og B1 með `verkfaeri/flytja-hreyfingar.html`
 - **Minn hlutur:** *(hvaða hlut þú ljósmyndaðir og hvaða gervigreindartól breytti myndinni í .glb)*
 - **Hljóð og áferðir:** búin til í kóða með `verkfaeri/bua_til_hljod_og_aferdir.py` (sínusbylgjur og suð með numpy), ekkert sótt af netinu.

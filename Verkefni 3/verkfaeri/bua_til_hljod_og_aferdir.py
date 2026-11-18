@@ -153,6 +153,22 @@ def sprenging():
     vista('sprenging', dynkur + brak + np.sin(2 * np.pi * 50 * t) * np.exp(-t * 7), 0.9)
 
 
+def r2():
+    """R2-D2 píp: nokkur stutt flaut sem renna upp og niður með titringi."""
+    r = np.random.default_rng(42)   # sér slembigjafi svo hin hljóðin breytist ekki
+    hlutar = []
+    for _ in range(7):
+        lengd = r.uniform(0.06, 0.18)
+        t = timi(lengd)
+        byrjun, endir = r.uniform(900, 3200, 2)
+        tidni = byrjun + (endir - byrjun) * (t / lengd) ** r.uniform(0.5, 2)
+        tidni *= 1 + 0.04 * np.sin(2 * np.pi * r.uniform(20, 45) * t)   # titringur
+        fasi = 2 * np.pi * np.cumsum(tidni) / RATE
+        hlutar.append(np.sin(fasi) * np.sin(np.pi * t / lengd) ** 0.5)
+        hlutar.append(np.zeros(int(RATE * r.uniform(0.0, 0.05))))
+    vista('r2', np.concatenate(hlutar), 0.7)
+
+
 # ---------- áferðir ----------
 
 def vista_mynd(nafn, gildi, litur):
@@ -217,5 +233,6 @@ if __name__ == '__main__':
     blaster()
     endurkast()
     sprenging()
+    r2()
     golf()
     veggur()

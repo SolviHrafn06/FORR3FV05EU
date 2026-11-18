@@ -14,7 +14,8 @@ Lestu það með `js/main.js`, `js/hreyfiklippur.js` og `verkfaeri/flytja-hreyfi
 5. Ef sverðið logar og Anakin snýr að skotinu **slær hann það til baka** í droidinn, sem dettur. Annars missir hann 10 líf.
 6. **Bil** heggur með sverðinu. Droid sem er nær en 2,4 m fyrir framan Anakin dettur.
 7. Þegar lífið klárast birtist „Myrka hliðin sigraði“ og hægt er að reyna aftur.
-8. Á meðan: ljósin í loftinu **flökta**, könnunar-droidinn í horninu **svífur og snýr sér að Anakin**, Millennium Falcon snýst sem **heilmynd**.
+8. **R2-D2** rúllar á eftir Anakin, vaggar til hliðanna, snýr hvelfingunni að næsta droid og pípir öðru hvoru.
+9. Á meðan: ljósin í loftinu **flökta**, könnunar-droidinn í horninu **svífur og snýr sér að Anakin**, Millennium Falcon snýst sem **heilmynd**.
 
 ---
 
@@ -73,6 +74,10 @@ scene
 │   │   ├── kula, auga, midbaugur, augaLjos (PointLight), loftnet
 │   │   └── fotur0 … fotur4             ← AnimationClip sveiflar þeim
 │   └── droidHljod (PositionalAudio)
+├── r2 (Group)                         ← eltir Anakin
+│   ├── R2-D2 módelið                   ← vaggar (rotation.z)
+│   │   └── r2Hvelfing (Group)          ← snúningsás í miðju hvelfingarinnar, hvelfingin og ljósin hennar
+│   └── r2Hljod (PositionalAudio)
 ├── holoBord (Group)
 │   └── holoHaldari                     ← anime.js snýr honum
 │       └── millennium_falcon.glb
@@ -156,6 +161,11 @@ scene
 - **`neistar()`**: 14 litlir kassar skjótast út. `y: [byrjun, upp, gólf]` eru keyframes svo þeir fara upp og detta svo niður.
 - **Merkið** í byrjun: `z: [-2.2, -45]` á 6 sek, hverfur inn í þokuna.
 - **`meidast()`**: rauður skjár blikkar (anime.js virkar líka á HTML).
+
+### R2-D2 (FÉLAGINN)
+- Hvelfingin í módelinu snýst ekki um eigin miðju og ljósin á henni eru sér hlutir. Því er búinn til tómur hópur `r2Hvelfing` í miðju hvelfingarinnar (`Box3`) og allir hlutir sem eru ofar en neðsti punktur hennar færðir undir hann með `attach()`. Þá snýst öll hvelfingin rétt.
+- **`uppfaeraR2()`**: markið er `anakin.localToWorld(1, 0, -1.4)`, þ.e. fyrir aftan Anakin og vinstra megin. Hraðinn eykst og minnkar mjúklega (`r2Hradi += (oskHradi - r2Hradi) * ...`), svo hann tekur ekki snögga kippi. Hann notar sömu árekstra og Anakin.
+- Hvelfingin snýr að næsta lifandi droid (annars að Anakin) og `r2Model.rotation.z = sin(tími) * ...` lætur hann vagga þegar hann rúllar.
 
 ### BATTLE DROIDAR (ÓVINIR)
 - B1 módelið er hlaðið einu sinni (`droidSnidmat`). `buaTilByssu()` býr til byssu úr kössum sem er fest við hægra handarbeinið með `attach()`. `buaTilOvin()` býr til afrit með `SkeletonUtils.clone()` (byssan fylgir með). Venjulegt `.clone()` virkar ekki á módel með beinagrind því afritið myndi deila beinunum.
