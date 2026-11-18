@@ -1,10 +1,17 @@
-# Módelin fara hingað
+# Módelin
 
-| Skrá | Hvað |
-| --- | --- |
-| `anakin.glb` | Anakin Skywalker módelið (úr Downloads). Best ef það er með hreyfingum, t.d. Idle og Walk/Run. |
-| `minn-hlutur.glb` | Hluturinn sem ég ljósmyndaði og breytti í 3D með gervigreind. |
+| Skrá / mappa | Notað sem | Höfundur og leyfi |
+| --- | --- | --- |
+| `anakin_skywalker__battlefront_ii/` | Anakin, karakterinn sem þú stýrir | rendysix, CC-BY-4.0 |
+| `anakin_lightsaber.glb` | skaftið á geislasverðinu | Khafesys, CC-BY-4.0 |
+| `b1_battle_droid_star_wars/` | óvinirnir (battle droidar) | leoxx300, CC-BY-4.0 |
+| `millennium_falcon.glb` | heilmyndin á borðinu | fredbear1211, CC-BY-4.0 |
+| `star_wars_-_logo/` | merkið í byrjun | David Tena C., CC-BY-4.0 |
+| `anakin_skywalker_lightsaber/` | ekki notað (má eyða) | Martin Rabanal 3D, Sketchfab Standard |
+| `minn-hlutur.glb` | **vantar:** hluturinn sem þú ljósmyndar og breytir í 3D | þú |
 
-Nöfnin verða að vera nákvæmlega svona (lágstafir), annars finnur `js/main.js` þau ekki.
+Öll módelin eru af Sketchfab. Til að leikurinn hlaðist hraðar var þeim breytt svona:
 
-Ef skrá vantar fer leikurinn samt í gang: Anakin verður þá að einföldu hylki og stallurinn er tómur.
+- Áferðir Anakins og B1 minnkaðar í 1024 px (B1 var 4096 px, ein myndin var 17 MB).
+- `anakin_lightsaber.glb`: þríhyrningum fækkað í ~10% með gltf-transform (10,7 MB → 1,2 MB).
+- `millennium_falcon.glb`: áferðir, normals og UV teknar burt og þríhyrningum fækkað (25 MB → 0,35 MB). Heilmyndin notar hvort eð er bara eitt gegnsætt blátt efni.
