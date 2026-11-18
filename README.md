@@ -26,6 +26,7 @@ Opnaðu viðeigandi verkefnamöppu og fylgdu þeim leiðbeiningum sem fylgja ver
 - [three.js æfing 2](./æfingar%20fyrir%20öll%20verkefni/three.js%20æfingar/æfing%202/index.html)
 - [verkefni 1](./Verkefni%201/index.html)
 - [verkefni 2](./Verkefni%202/index.html)
+- [verkefni 3](./Verkefni%203/index.html)
 
 ---
 

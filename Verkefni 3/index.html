@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dularfulla herbergið – Star Wars</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M6 26 24 8' stroke='%2366b3ff' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M4 28l3-3' stroke='%23aaa' stroke-width='5'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Three.js og Anime.js eru sótt af CDN, ekkert safn er geymt á GitHub -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/",
+        "animejs": "https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/modules/index.js",
+        "animejs/adapters/three": "https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/modules/adapters/three/index.js"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <!-- hleðsluskjár: sést þar til LoadingManager segir að allt sé komið -->
+  <div id="hledsla">
+    <p class="inngangur">Fyrir langa löngu, í vetrarbraut langt, langt í burtu…</p>
+    <h1>Dularfulla<br>herbergið</h1>
+    <div class="framvinda"><div id="framvinda-stika"></div></div>
+    <p id="framvinda-texti">Hleð inn… 0%</p>
+    <button id="byrja" hidden>Byrja</button>
+  </div>
+
+  <!-- stjórnborð sem birtist eftir að smellt er á Byrja -->
+  <div id="hud" hidden>
+    <p class="leidbeiningar">
+      <span class="lyklabord"><b>WASD / örvar</b> ganga · <b>Shift</b> hlaupa · <b>Bil</b> sveifla · <b>F</b> sverð á / af<br></span>
+      <b>Smelltu eða pikkaðu á gólfið</b> til að ganga þangað
+    </p>
+    <div class="takkar">
+      <button id="takki-sveifla">Sveifla</button>
+      <button id="takki-sverd">Sverð</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

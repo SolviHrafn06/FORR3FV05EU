@@ -1,0 +1,185 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #05070d;
+  color: #dbe6ff;
+  font-family: 'Orbitron', system-ui, sans-serif;
+}
+
+canvas {
+  display: block;
+  touch-action: none; /* svo smellur/snerting á gólfið skruni ekki síðunni */
+}
+
+/* ---------- hleðsluskjár ---------- */
+
+#hledsla {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  padding: 16px;
+  text-align: center;
+  /* stjörnuhiminn úr litlum hringjum */
+  background:
+    radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+    radial-gradient(1px 1px at 70% 80%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 40% 70%, #cde, transparent),
+    radial-gradient(1px 1px at 85% 20%, #fff, transparent),
+    radial-gradient(1px 1px at 10% 85%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 55% 15%, #fff, transparent),
+    #02030a;
+  background-size: 220px 220px, 300px 300px, 260px 260px, 340px 340px, 280px 280px, 400px 400px, auto;
+  transition: opacity 0.8s;
+}
+
+#hledsla.falid {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.inngangur {
+  margin: 0;
+  color: #4fc3ff;
+  font-family: system-ui, sans-serif;
+  font-size: clamp(0.9rem, 2.5vw, 1.15rem);
+}
+
+h1 {
+  margin: 0;
+  color: #ffe81f;
+  font-weight: 800;
+  font-size: clamp(2.2rem, 9vw, 5rem);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.framvinda {
+  width: min(320px, 80vw);
+  height: 6px;
+  border-radius: 3px;
+  background: #1a2233;
+  overflow: hidden;
+}
+
+#framvinda-stika {
+  width: 0;
+  height: 100%;
+  background: #4fa3ff;
+  box-shadow: 0 0 10px #4fa3ff;
+  transition: width 0.2s;
+}
+
+#framvinda-texti {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+#byrja {
+  padding: 0.8em 2.6em;
+  border: 2px solid #8fd0ff;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 1.2rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 0 12px #2f8cff, inset 0 0 12px #2f8cff;
+  animation: glodir 1.6s ease-in-out infinite alternate;
+}
+
+#byrja:hover,
+#byrja:focus-visible {
+  background: #2f8cff33;
+  outline: none;
+}
+
+@keyframes glodir {
+  to {
+    box-shadow: 0 0 28px #2f8cff, inset 0 0 18px #2f8cff;
+  }
+}
+
+/* ---------- stjórnborð ---------- */
+
+#hud {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  pointer-events: none;
+}
+
+.leidbeiningar {
+  margin: 0;
+  padding: 0.6em 0.9em;
+  border-radius: 8px;
+  background: #05070dcc;
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.leidbeiningar b {
+  color: #8fd0ff;
+}
+
+.takkar {
+  display: flex;
+  gap: 10px;
+}
+
+.takkar button {
+  width: 76px;
+  height: 76px;
+  border: 2px solid #8fd0ff;
+  border-radius: 50%;
+  background: #05070dcc;
+  color: #fff;
+  font: inherit;
+  font-size: 0.7rem;
+  pointer-events: auto;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.takkar button:active {
+  background: #2f8cff55;
+}
+
+/* á snertiskjá er ekkert lyklaborð, þá eru bara takkarnir og pikk á gólfið */
+@media (pointer: coarse) {
+  .lyklabord {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  #hud {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .takkar {
+    justify-content: flex-end;
+  }
+}
