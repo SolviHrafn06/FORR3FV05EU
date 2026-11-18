@@ -7,7 +7,7 @@ Lítill 3D leikur í Three.js (r187) í tveimur hlutum:
 
 Herbergið er „Dularfulla herbergið“ í Star Wars búningi: næstum tómt, súlur, þoka (`FogExp2`), ljósgjafi í hendi karaktersins og furðuleg vera í horninu sem snýr sér að honum með `.lookAt()`.
 
-spila á [github pages](https://solvihrafn06.github.io/FORR3FV05EU/Verkefni%203/)
+spila á [github pages](https://solvihrafn06.github.io/FORR3FV05EU/%C3%A6fingar%20fyrir%20%C3%B6ll%20verkefni/%C3%A6fingar%20leikur/)
 
 ## Stýring
 
@@ -28,7 +28,7 @@ spila á [github pages](https://solvihrafn06.github.io/FORR3FV05EU/Verkefni%203/
 ## Skrár
 
 ```
-Verkefni 3/
+æfingar leikur/
   index.html            hleðsluskjár, líf/stig, leikslok, stjórnborð og import map fyrir CDN
   css/style.css
   js/main.js            allur leikurinn
