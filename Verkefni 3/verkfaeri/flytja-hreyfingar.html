@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+  <meta charset="UTF-8">
+  <title>Flytja hreyfingar</title>
+  <style>
+    body { margin: 0; padding: 16px; background: #10131a; color: #dde; font-family: system-ui, sans-serif; }
+    a { color: #8fd0ff; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <h1>Flytja hreyfingar yfir á Anakin og B1</h1>
+  <p>Þessi síða er <b>ekki hluti af leiknum</b>. Hún var keyrð einu sinni til að búa til <code>hreyfingar/hreyfingar.json</code>.</p>
+  <p>Hún tekur alvöru hreyfingar (idle, walk, run, tekið upp með hreyfiföngun / mocap) af Xbot módelinu úr three.js
+     og færir þær yfir á beinagrind Anakins og B1 droidsins, sem komu án hreyfinga.</p>
+  <p id="stada">Vinn…</p>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // Xbot úr dæmum three.js. Hreyfingarnar á því eru frá Mixamo
+    const XBOT = 'https://raw.githubusercontent.com/mrdoob/three.js/r187/examples/models/gltf/Xbot.glb';
+    const ANAKIN = '../models/anakin_skywalker__battlefront_ii/scene.gltf';
+    const B1 = '../models/b1_battle_droid_star_wars/scene.gltf';
+    const FPS = 30;
+
+    // hvaða bein í Xbot (mixamorig…) samsvarar hvaða beini í hinum módelunum.
+    // Hægri hönd Anakins er ekki með, hún heldur á sverðinu (sjá hreyfiklippur.js).
+    // Hendur B1 eru ekki með, þær halda á byssunni.
+    const V = 'ValveBipedBip01_';
+    const ANAKIN_KORT = {
+      Hips: V + 'Pelvis_01', Spine: V + 'Spine_02', Spine1: V + 'Spine2_04', Spine2: V + 'Spine4_05',
+      Neck: V + 'Neck1_06', Head: V + 'Head1_07',
+      LeftShoulder: V + 'L_Clavicle_033', LeftArm: V + 'L_UpperArm_034', LeftForeArm: V + 'L_Forearm_035', LeftHand: V + 'L_Hand_036',
+      LeftUpLeg: V + 'L_Thigh_055', LeftLeg: V + 'L_Calf_056', LeftFoot: V + 'L_Foot_057', LeftToeBase: V + 'L_Toe0_058',
+      RightUpLeg: V + 'R_Thigh_052', RightLeg: V + 'R_Calf_053', RightFoot: V + 'R_Foot_00', RightToeBase: V + 'R_Toe0_054',
+    };
+    const B1_KORT = {
+      Hips: 'Bone_02', Spine: 'Bone006_03', Spine1: 'Bone007_04', Spine2: 'Bone008_05', Neck: 'Bone009_06', Head: 'Bone010_07',
+      LeftUpLeg: 'Bone002_024', LeftLeg: 'Bone003_025', LeftFoot: 'Bone005_026',
+      RightUpLeg: 'Bone022_027', RightLeg: 'Bone023_028', RightFoot: 'Bone024_029',
+    };
+
+    const loader = new GLTFLoader();
+    const hlada = (slod) => new Promise((klart, villa) => loader.load(slod, klart, undefined, villa));
+
+    function dypt(hlutur) {
+      let d = 0;
+      for (let h = hlutur; h.parent; h = h.parent) d++;
+      return d;
+    }
+
+    function laegstaY(model) {
+      return new THREE.Box3().setFromObject(model).min.y;
+    }
+
+    // Flytur eina klippu af Xbot yfir á annað módel.
+    // Bæði módelin standa í T-stellingu og snúa í +z. Fyrir hvert bein:
+    //   breyting  = snúningur Xbot-beinsins núna · (snúningur þess í hvíld)⁻¹      (í heimshnitum)
+    //   nýtt      = breyting · snúningur mark-beinsins í hvíld
+    //   staðbundið = (snúningur foreldris)⁻¹ · nýtt
+    function flytja(xbot, klippa, mark, kort) {
+      xbot.updateMatrixWorld(true);
+      mark.updateMatrixWorld(true);
+
+      const por = Object.entries(kort).map(([x, m]) => ({ x: xbot.getObjectByName('mixamorig' + x), m: mark.getObjectByName(m) }));
+      por.sort((a, b) => dypt(a.m) - dypt(b.m));   // foreldrar á undan börnum
+      for (const p of por) {
+        p.xHvild = p.x.getWorldQuaternion(new THREE.Quaternion());
+        p.mHvild = p.m.getWorldQuaternion(new THREE.Quaternion());
+        p.mStadbundid = p.m.quaternion.clone();
+        p.gildi = [];
+      }
+
+      // mjaðmirnar færast líka upp og niður; hreyfingin er skölun eftir hæð mjaðmanna
+      const xMjadmir = por[0].x, mMjadmir = por[0].m;
+      const xMjadmirHvild = xMjadmir.getWorldPosition(new THREE.Vector3());
+      const mMjadmirHvild = mMjadmir.getWorldPosition(new THREE.Vector3());
+      const hlutfall = (mMjadmirHvild.y - laegstaY(mark)) / (xMjadmirHvild.y - laegstaY(xbot));
+      const mStadaHvild = mMjadmir.position.clone();
+      const stadaGildi = [];
+
+      const mixer = new THREE.AnimationMixer(xbot);
+      mixer.clipAction(klippa).play();
+      const fjoldi = Math.round(klippa.duration * FPS);
+      const timar = [];
+      const q = new THREE.Quaternion();
+      const foreldri = new THREE.Quaternion();
+
+      for (let i = 0; i <= fjoldi; i++) {
+        const t = (i / fjoldi) * klippa.duration;
+        timar.push(t);
+        mixer.setTime(t);
+        xbot.updateMatrixWorld(true);
+
+        for (const p of por) {
+          p.x.getWorldQuaternion(q);
+          q.multiply(p.xHvild.clone().invert()).multiply(p.mHvild);
+          p.m.parent.getWorldQuaternion(foreldri);
+          p.m.quaternion.copy(foreldri.invert().multiply(q));
+          p.m.updateMatrixWorld(true);
+          p.gildi.push(...p.m.quaternion.toArray());
+        }
+
+        const breyting = xMjadmir.getWorldPosition(new THREE.Vector3()).sub(xMjadmirHvild).multiplyScalar(hlutfall);
+        breyting.z = 0;   // ekki færa hann áfram, leikurinn sér um það
+        const heimur = mMjadmirHvild.clone().add(breyting);
+        const stad = mMjadmir.parent.worldToLocal(heimur);
+        stadaGildi.push(stad.x, stad.y, stad.z);
+      }
+
+      // skila beinunum í hvíldarstöðu fyrir næstu klippu
+      mixer.stopAllAction();
+      for (const p of por) p.m.quaternion.copy(p.mStadbundid);
+      mMjadmir.position.copy(mStadaHvild);
+      mark.updateMatrixWorld(true);
+
+      const spor = por.map((p) => new THREE.QuaternionKeyframeTrack(p.m.name + '.quaternion', timar, p.gildi));
+      spor.push(new THREE.VectorKeyframeTrack(mMjadmir.name + '.position', timar, stadaGildi));
+      return new THREE.AnimationClip(klippa.name, klippa.duration, spor);
+    }
+
+    // Hversu hratt gengur Xbot í klippunni (í hæðum á sekúndu)?
+    // Á meðan fótur stendur í gólfinu færist hann aftur miðað við mjaðmirnar á sama hraða og gengið er.
+    function hradiKlippu(xbot, klippa) {
+      const mixer = new THREE.AnimationMixer(xbot);
+      mixer.clipAction(klippa).play();
+      const fotur = xbot.getObjectByName('mixamorigLeftFoot');
+      const mjadmir = xbot.getObjectByName('mixamorigHips');
+      let minnst = Infinity, mest = -Infinity;
+      for (let i = 0; i <= 60; i++) {
+        mixer.setTime((i / 60) * klippa.duration);
+        xbot.updateMatrixWorld(true);
+        const z = fotur.getWorldPosition(new THREE.Vector3()).z - mjadmir.getWorldPosition(new THREE.Vector3()).z;
+        minnst = Math.min(minnst, z);
+        mest = Math.max(mest, z);
+      }
+      mixer.stopAllAction();
+      const haed = new THREE.Box3().setFromObject(xbot).getSize(new THREE.Vector3()).y;
+      return (2 * (mest - minnst)) / klippa.duration / haed;
+    }
+
+    const [xbotGltf, anakinGltf, b1Gltf] = await Promise.all([hlada(XBOT), hlada(ANAKIN), hlada(B1)]);
+    const xbot = xbotGltf.scene;
+    const klippa = (nafn) => xbotGltf.animations.find((k) => k.name === nafn);
+
+    const anakin = anakinGltf.scene;
+    anakin.rotation.y = -Math.PI / 2;   // Anakin og B1 snúa í +x, Xbot í +z
+    const b1 = b1Gltf.scene;
+    b1.rotation.y = -Math.PI / 2;
+
+    const hradiGanga = hradiKlippu(xbot, klippa('walk'));
+    const hradiHlaup = hradiKlippu(xbot, klippa('run'));
+
+    const nidurstada = {
+      uppruni: 'Xbot.glb úr three.js (hreyfingar frá Mixamo), flutt með verkfaeri/flytja-hreyfingar.html',
+      hradi: { ganga: hradiGanga, hlaupa: hradiHlaup },   // í hæðum karaktersins á sekúndu
+      anakin: {
+        kyrr: THREE.AnimationClip.toJSON(flytja(xbot, klippa('idle'), anakin, ANAKIN_KORT)),
+        ganga: THREE.AnimationClip.toJSON(flytja(xbot, klippa('walk'), anakin, ANAKIN_KORT)),
+        hlaupa: THREE.AnimationClip.toJSON(flytja(xbot, klippa('run'), anakin, ANAKIN_KORT)),
+      },
+      b1: {
+        kyrr: THREE.AnimationClip.toJSON(flytja(xbot, klippa('idle'), b1, B1_KORT)),
+        ganga: THREE.AnimationClip.toJSON(flytja(xbot, klippa('walk'), b1, B1_KORT)),
+      },
+    };
+
+    // námundun svo skráin verði minni
+    const texti = JSON.stringify(nidurstada, (k, v) => (typeof v === 'number' ? Math.round(v * 10000) / 10000 : v));
+    window.nidurstada = texti;
+    const hlekkur = document.createElement('a');
+    hlekkur.href = URL.createObjectURL(new Blob([texti], { type: 'application/json' }));
+    hlekkur.download = 'hreyfingar.json';
+    hlekkur.textContent = 'Sækja hreyfingar.json (' + Math.round(texti.length / 1024) + ' KB)';
+    document.querySelector('#stada').replaceChildren('Búið. ', hlekkur);
+  </script>
+</body>
+</html>

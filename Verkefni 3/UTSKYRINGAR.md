@@ -1,7 +1,7 @@
 # Dularfulla herbergið – útskýringar á kóðanum
 
 Þetta skjal er til að **læra** hvað allt gerir svo þú getir útskýrt það fyrir kennaranum.
-Lestu það með `js/main.js` og `js/hreyfiklippur.js` opin hlið við hlið. `main.js` er skipt í kafla með fyrirsögnum eins og `// ==================== HLJÓÐ ====================` og hér er vísað í þá kafla og nöfn fallanna.
+Lestu það með `js/main.js`, `js/hreyfiklippur.js` og `verkfaeri/flytja-hreyfingar.html` opin hlið við hlið. `main.js` er skipt í kafla með fyrirsögnum eins og `// ==================== HLJÓÐ ====================` og hér er vísað í þá kafla og nöfn fallanna.
 
 ---
 
@@ -41,7 +41,7 @@ Lestu það með `js/main.js` og `js/hreyfiklippur.js` opin hlið við hlið. `m
 | 10% | `AudioListener`, `AudioLoader`, `Audio`, `PositionalAudio` | kaflinn **HLJÓÐ**, ræst í smelli á Byrja |
 | 5% | `LoadingManager` birtir Byrja | kaflinn **HLEÐSLA**: `manager.onProgress` og `manager.onLoad` |
 
-**Athugið:** Anakin módelið kom **án** tilbúinna hreyfinga. Hreyfingarnar eru búnar til í kóða úr beinagrind þess (sjá kafla 4). Það gæti kennarinn viljað vita.
+**Athugið:** Anakin módelið kom **án** tilbúinna hreyfinga. Ganga, hlaup og kyrrstaða eru alvöru hreyfiföngun (mocap) af öðru módeli (Xbot) sem var flutt yfir á beinagrind Anakins (sjá kafla 4). Það gæti kennarinn viljað vita.
 
 ---
 
@@ -67,6 +67,7 @@ scene
 │   ├── velta (Group)                   ← anime.js: rotateX -90 þegar hann er sigraður
 │   │   └── afrit af B1 módelinu (SkeletonUtils.clone)
 │   └── hljod (PositionalAudio)         ← skot og sprenging
+│       (byssan er fest við hægra handarbein B1 og hefur tóman hlut 'hlaup' þar sem skotin koma út)
 ├── droid (Group)                       ← könnunar-droidinn, .lookAt(anakin)
 │   ├── skrokkur (Group)                ← AnimationClip færir hann upp og niður
 │   │   ├── kula, auga, midbaugur, augaLjos (PointLight), loftnet
@@ -93,6 +94,8 @@ scene
 - `renderer.shadowMap.enabled = true` kveikir á skuggum. Hver hlutur þarf líka `castShadow` (varpar) eða `receiveShadow` (tekur við).
 - `FogExp2(litur, þéttleiki)`: því lengra sem hlutur er frá myndavélinni, því meira hverfur hann í þokuna.
 - `scene.environment` (RoomEnvironment): dauft „umhverfi“ sem málmar endurspegla. Án þess verða málmhlutir eins og droidarnir kolsvartir.
+- **Bloom** (`EffectComposer` → `RenderPass` → `UnrealBloomPass` → `OutputPass`): allt sem er bjartara en hvítt fær ljóma. Þröskuldurinn er 1, svo hlutir sem eiga að ljóma (sverðið, skotin, augað) fá lit sem er margfaldaður upp fyrir 1 með `.multiplyScalar(4)`. Í lykkjunni er `composer.render()` í stað `renderer.render()`.
+- Gegnsæir hlutir með `AdditiveBlending` (ljósgeislarnir) eru nú blandaðir í línulegum litum, svo þeir þurfa að vera mjög daufir (`GEISLI_STYRKUR = 0.012`).
 
 ### HLEÐSLA (LoadingManager)
 - Einn `LoadingManager` er sendur inn í alla loaderana (`GLTFLoader`, `TextureLoader`, `AudioLoader`), svo hann veit um allar skrár.
@@ -114,10 +117,12 @@ scene
 
 ### ANAKIN OG GEISLASVERÐIÐ
 - **Skaftið** (`anakin_lightsaber.glb`) er á ská í módelinu og með sínu eigin blaði. Kóðinn notar endana á innbyggða blaðinu (`Laser`) til að finna í hvaða átt það vísar, tekur blaðið burt og snýr skaftinu upp með `quaternion.setFromUnitVectors(stefna, upp)`. Svo er okkar eigið blað notað, því það getur kviknað og slokknað.
-- **Hreyfingarnar** eru búnar til með `anakinKlippur(model)` (sjá kafla 4) **áður** en módelinu er snúið og það skalað.
+- `Promise.all([gltfLoader.loadAsync(...), hreyfingaGogn])` bíður eftir bæði módelinu og `hreyfingar.json` (hlaðið með `FileLoader`, sem notar líka manager).
+- Mocap klippurnar eru lesnar með `THREE.AnimationClip.parse(...)`. `stillaHrada()` stillir `timeScale` svo fæturnir hreyfist jafn hratt og Anakin færist, svo hann renni ekki eftir gólfinu.
+- Hreyfingar hægri handar og fingra eru búnar til með `anakinKlippur(model)` **áður** en módelinu er snúið og það skalað.
 - Tvö „lög“ af hreyfingum keyra á sama tíma á sama `mixer`:
-  1. `kyrr` / `ganga` / `hlaupa`: fætur, vinstri hönd og búkur. Skipt á milli með `crossFadeTo` í `skiptaUmHreyfingu()`.
-  2. `vorn` / `hogg`: bara hægri höndin. Höggið er `LoopOnce` og þegar það klárast (`'finished'` atburður) fer vörnin aftur í gang.
+  1. `kyrr` / `ganga` / `hlaupa` (mocap): fætur, vinstri hönd, búkur og höfuð. Skipt á milli með `crossFadeTo` í `skiptaUmHreyfingu()`.
+  2. `vorn` / `hogg` / `verja`: hægri höndin og fingurnir. `handarHreyfing()` spilar högg eða verja einu sinni (`LoopOnce`) og þegar það klárast (`'finished'` atburður) fer vörnin aftur í gang. `verja` spilast sjálfkrafa þegar skot er slegið til baka.
   Af því að lögin snerta ekki sömu beinin getur Anakin gengið og höggvið í einu.
 - **Sverðið fest í lófann:** `mixer.update(0)` setur Anakin í varnarstöðu, lófinn er reiknaður mitt á milli handarbeinsins og fingranna, sverðið sett þar og svo `hond.attach(geislasverd)`.
 
@@ -153,7 +158,9 @@ scene
 - **`meidast()`**: rauður skjár blikkar (anime.js virkar líka á HTML).
 
 ### BATTLE DROIDAR (ÓVINIR)
-- B1 módelið er hlaðið einu sinni (`droidSnidmat`). `buaTilOvin()` býr til afrit með `SkeletonUtils.clone()`. Venjulegt `.clone()` virkar ekki á módel með beinagrind því afritið myndi deila beinunum.
+- B1 módelið er hlaðið einu sinni (`droidSnidmat`). `buaTilByssu()` býr til byssu úr kössum sem er fest við hægra handarbeinið með `attach()`. `buaTilOvin()` býr til afrit með `SkeletonUtils.clone()` (byssan fylgir með). Venjulegt `.clone()` virkar ekki á módel með beinagrind því afritið myndi deila beinunum.
+- Tvö lög: líkaminn gengur eða stendur (mocap `ganga` / `kyrr`, `crossFadeTo`), hendurnar miða alltaf (`mida`).
+- `blossi()`: skotblossi við byssuhlaupið, kúla sem stækkar og dofnar með anime.js.
 - Hver droid er `{ hopur, velta, mixer, ganga, mida, virk, hljod, lifandi, naestaSkot }` í fylkinu `ovinir`.
 - **`uppfaeraOvini()`** í hverjum ramma: ef droidinn er enn í ganginum eða lengra en 6 m frá Anakin gengur hann (`ganga`). Annars stoppar hann, miðar (`mida`, skipt með `crossFadeTo`) og skýtur á 1,6–3 sek fresti.
 - **`skjota()`**: býr til leysiskot sem flýgur í átt að brjósti Anakins.
@@ -172,37 +179,39 @@ scene
 
 ---
 
-## 4. `hreyfiklippur.js`: hreyfingar úr beinagrind
+## 4. Hreyfingarnar: mocap + beinagrind
 
-Anakin og B1 komu með beinagrind (bein fyrir læri, hné, handleggi …) en **engar hreyfingar**. Þetta skjal býr þær til.
+Anakin og B1 komu með beinagrind (bein fyrir læri, hné, handleggi …) en **engar hreyfingar**.
 
-**Hugmyndin:** hvert bein sveiflast eins og sínusbylgja:
+### Mocap (`verkfaeri/flytja-hreyfingar.html` → `hreyfingar/hreyfingar.json`)
 
-```
-horn = midja + sveifla · sin(2π · t / lengd + fasi)
-```
+Xbot módelið í dæmum three.js er með alvöru hreyfingar (idle, walk, run) teknar upp með hreyfiföngun. Verkfærið færir þær yfir á Anakin og B1. Það var keyrt einu sinni í vafra og niðurstaðan vistuð í `hreyfingar.json`, svo leikurinn þarf ekki að gera þetta í hvert skipti.
 
-Dæmi úr göngunni:
+1. `ANAKIN_KORT` segir hvaða bein samsvara: `mixamorigLeftUpLeg` → `ValveBipedBip01_L_Thigh_055` o.s.frv. Hægri hönd Anakins er ekki með (hún heldur á sverðinu) og hendur B1 ekki heldur (þær halda á byssunni).
+2. Bæði módelin standa í T-stellingu í hvíld og snúa eins. Fyrir hvern ramma og hvert bein:
+   ```
+   breyting = snúningur Xbot-beinsins núna · (snúningur þess í hvíld)⁻¹     (í heimshnitum)
+   nýtt     = breyting · snúningur Anakin-beinsins í hvíld
+   staðbundið = (snúningur foreldris)⁻¹ · nýtt
+   ```
+   Foreldrar eru reiknaðir á undan börnum svo „snúningur foreldris“ sé þegar réttur.
+3. Mjaðmirnar færast líka upp og niður. Sú hreyfing er skölun eftir hæð mjaðmanna (Anakin er með styttri fætur en Xbot).
+4. `hradiKlippu()` mælir hversu hratt Xbot gengur (hversu langt fóturinn fer aftur á meðan hann stendur í gólfinu). Leikurinn notar það í `stillaHrada()`.
+
+### Hendur og fingur (`js/hreyfiklippur.js`)
+
+Það sem mocap-ið hefur ekki er búið til í kóða með því að snúa beinum um ása módelsins:
+
 ```js
-{ bein: 'ValveBipedBip01_R_Thigh_052', as: 'z', sveifla: 24 }            // hægra læri ±24°
-{ bein: 'ValveBipedBip01_L_Thigh_055', as: 'z', sveifla: 24, fasi: H }   // vinstra læri á móti (H = π)
+{ bein: 'ValveBipedBip01_R_UpperArm_015', as: 'x', midja: 82 }          // hægri hönd niður
+{ bein: 'ValveBipedBip01_R_UpperArm_015', as: 'x', lyklar: [82, 15, 60, 82] }   // högg: vörn → lyfta → höggva → vörn
 ```
 
-**Ásarnir** eru ásar módelsins í hvíldarstöðu: x = fram, y = upp, z = til hægri. Fótur sem vísar niður fer **fram** þegar honum er snúið jákvætt um z.
+- `midja` / `sveifla` / `fasi`: horn = midja + sveifla · sin(2π · t / lengd + fasi)
+- `lyklar`: horn sem dreifast jafnt yfir klippuna
+- `fingur('R', 65)`: hver fingurliður á hægri hendi kreppist um 65° utan um skaftið
 
-**Stærðfræðin í `buaTilKlippu()`:** hvert bein á sinn eigin snúning (`bein.quaternion`) miðað við foreldrið sitt. Til að snúa beininu um ás *módelsins* þarf að umreikna:
-
-```
-nýr snúningur = P⁻¹ · R · P · hvíldarstaða
-```
-
-- `P` = hvernig foreldri beinsins snýr í hnitum módelsins
-- `R` = snúningurinn sem við viljum (t.d. 24° um z)
-- `P⁻¹ · R · P` breytir R úr hnitum módelsins yfir í hnit foreldrisins
-
-Þetta er reiknað fyrir 17 tímapunkta og sett í `QuaternionKeyframeTrack`. Úr þeim verður `AnimationClip` sem `AnimationMixer` spilar alveg eins og innbyggða hreyfingu.
-
-Fyrir **höggið** (gerist bara einu sinni) eru notaðir `lyklar` í stað sínusbylgju: `[82, 15, 60, 82]` þýðir byrja í vörn, lyfta, höggva, aftur í vörn.
+`buaTilKlippu()` umreiknar hvern snúning úr hnitum módelsins í hnit beinsins (`P⁻¹ · R · P · hvíldarstaða`, P = snúningur foreldris) og býr til `QuaternionKeyframeTrack`.
 
 ---
 
