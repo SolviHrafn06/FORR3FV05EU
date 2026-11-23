@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="is">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backrooms</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/",
+        "animejs": "https://cdn.jsdelivr.net/npm/animejs@4.2.2/+esm"
+      }
+    }
+  </script>
+  <script type="module" src="./main.js"></script>
+</head>
+<body>
+  <div id="loading">
+    <h1>THE BACKROOMS</h1>
+    <p id="progress">Hleð inn... 0%</p>
+    <button id="start" hidden>Byrja</button>
+    <p class="credit">
+      Vera: „Fear Crawler All animation It Takes to“ eftir
+      <a href="https://sketchfab.com/alex.andain.777">alex.andain.777</a>
+      (<a href="https://creativecommons.org/licenses/by/4.0/">CC-BY-4.0</a>) ·
+      Karakter: Soldier.glb úr dæmum Three.js
+    </p>
+  </div>
+
+  <p id="hud">WASD / örvatakkar til að ganga</p>
+</body>
+</html>
