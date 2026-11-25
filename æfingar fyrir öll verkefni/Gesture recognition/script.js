@@ -5,7 +5,7 @@ import { GestureRecognizer, FilesetResolver, DrawingUtils } from 'https://cdn.js
 
 const MP_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 const LIKAN_URL = 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task';
-const LAGM_VISSA = 0.6;   // hunsa bendingar sem módelið er ekki nógu visst um
+const LAGM_VISSA = 0.5;   // hunsa bendingar sem módelið er ekki nógu visst um
 const HRADI = 1.5;        // radíanar á sekúndu
 
 // bending -> [ás, átt]
@@ -82,6 +82,8 @@ async function buaTilGreini() {
         baseOptions: { modelAssetPath: LIKAN_URL, delegate },
         runningMode: 'VIDEO',
         numHands: 1,
+        // á vefmyndavél er "None" oft efst; bönnum það svo besta raunverulega bendingin komi
+        cannedGesturesClassifierOptions: { categoryDenylist: ['None'] },
       });
       return { g, delegate };
     } catch (e) {
@@ -127,7 +129,9 @@ function greinaHond() {
 
   const best = nidurstada.gestures[0]?.[0];
   const nafn = best && best.score >= LAGM_VISSA && best.categoryName !== 'None' ? best.categoryName : null;
-  bendingEl.textContent = nafn ?? '–';
+  // sýna líka óvissar bendingar (daufar) svo sést hvað módelið heldur
+  bendingEl.textContent = best?.categoryName || '–';
+  bendingEl.style.opacity = nafn ? 1 : 0.4;
   vissaEl.textContent = best ? `${Math.round(best.score * 100)}%` : '';
   if (nafn !== virkBending) {
     document.querySelectorAll('#skyring li').forEach((li) => li.classList.toggle('virk', li.dataset.g === nafn));
