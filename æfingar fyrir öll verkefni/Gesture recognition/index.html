@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="is">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Handabendingar – snúa hlut</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="sena"></canvas>
+
+  <section id="hud">
+    <h1>Handabendingar</h1>
+    <p id="stada">Hleð inn…</p>
+    <p class="bending"><span id="bending">–</span> <small id="vissa"></small></p>
+    <ul id="skyring">
+      <li data-g="Thumb_Up">👍 Thumb_Up – snúa um X (+)</li>
+      <li data-g="Thumb_Down">👎 Thumb_Down – snúa um X (−)</li>
+      <li data-g="Pointing_Up">☝️ Pointing_Up – snúa um Y (+)</li>
+      <li data-g="Victory">✌️ Victory – snúa um Y (−)</li>
+      <li data-g="ILoveYou">🤟 ILoveYou – snúa um Z</li>
+      <li data-g="Closed_Fist">✊ Closed_Fist – stoppa</li>
+      <li data-g="Open_Palm">🖐️ Open_Palm – núllstilla</li>
+    </ul>
+  </section>
+
+  <div id="myndavel">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="hendur"></canvas>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>

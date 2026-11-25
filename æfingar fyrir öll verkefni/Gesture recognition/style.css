@@ -1,0 +1,20 @@
+html, body { margin: 0; height: 100%; overflow: hidden; background: #10161a; color: #eef2ee; font-family: system-ui, sans-serif; }
+#sena { display: block; width: 100%; height: 100%; }
+
+#hud { position: fixed; top: 16px; left: 16px; max-width: 320px; padding: 16px 20px; border-radius: 14px; background: #10161acc; }
+#hud h1 { margin: 0 0 4px; font-size: 1.2rem; }
+#stada { margin: 0; font-size: .8rem; color: #9fb3aa; }
+.bending { margin: 12px 0; font-size: 1.4rem; font-weight: 700; }
+.bending small { font-size: .8rem; font-weight: 400; color: #9fb3aa; }
+#skyring { margin: 0; padding: 0; list-style: none; font-size: .85rem; line-height: 1.8; }
+#skyring li { padding: 0 6px; border-radius: 6px; }
+#skyring li.virk { background: #2f6f5c; }
+
+#myndavel { position: fixed; right: 16px; bottom: 16px; width: min(360px, 45vw); aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; background: #000; }
+/* spegla svo höndin hreyfist eins og í spegli */
+#myndavel video, #myndavel canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+
+@media (max-width: 600px) {
+  #hud { right: 16px; max-width: none; padding: 12px; }
+  #skyring { display: none; }
+}
