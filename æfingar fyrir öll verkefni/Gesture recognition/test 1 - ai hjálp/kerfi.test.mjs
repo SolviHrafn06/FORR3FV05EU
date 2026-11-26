@@ -23,6 +23,7 @@ import { aresktur } from './edlisfraedi.js';
   assert.equal(b.update('Thumb_Down', 0.9, 1100).skipun, 'eyda');
   assert.equal(new BendingaHald().update('Victory', 0.3, 0).nafn, null, 'óviss bending er hunsuð');
   assert.equal(new BendingaHald().update('Pointing_Up', 0.99, 0).nafn, null, 'Pointing_Up er leysir, ekki haldskipun');
+  assert.equal(new BendingaHald().update('constructor', 0.99, 0).nafn, null, 'aðeins eigin bendingar í skipanalistanum eru gildar');
   assert.deepEqual(Object.values(SKIPANIR).sort(), ['eyda', 'nullstilla', 'nyr', 'xray']);
 }
 

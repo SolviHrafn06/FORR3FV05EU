@@ -5,21 +5,23 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
-import { GestureRecognizer, FilesetResolver, DrawingUtils } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35';
-import { HandStada, Mykir, Sia1D, paraSpor, lofaMidja, klipuPunktur, handStaerd, handGrunnur, fjarlaegd, THUMB_TIP, INDEX_TIP, INDEX_MCP } from './hond.js';
+import { HandLandmarker, DrawingUtils } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35';
+import { HandStada, flokkaBendingu, Mykir, Sia1D, paraSpor, lofaMidja, klipuPunktur, handStaerd, handGrunnur, fjarlaegd, THUMB_TIP, INDEX_TIP, INDEX_MCP } from './hond.js';
 import { BendingaHald } from './bendingar.js';
 import { aresktur } from './edlisfraedi.js';
 import { Agnir } from './agnir.js';
 import { SKRA, RADIUS, LITIR, SLOD_N, buaTilHlut, setjaISenu, takaUrSenu, setjaXray } from './hlutir.js';
 
-const MP_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm';
-const LIKAN_URL = 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task';
+const MP_MODUL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35';
+const MP_URL = MP_MODUL + '/wasm';
+const LIKAN_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 
 const MIN_STAERD = 0.3, MAX_STAERD = 3.5;
 const MIN_FJ = 1.5, MAX_FJ = 9;   // fjarlægð hluta frá myndavél
 const GOLF = -1.4;
-const ZOOM_NAEMNI = 2.0;          // stærð = s0 * e^(breyting á klípubili * þetta)
-const TYND_SLEPPIR = 120;         // ms: ef gríphöndin hverfur (hreyfiþoka í kasti) sleppir hún strax
+const ZOOM_NAEMNI = 1.2;          // minnkun = e^(hve mikið klípan lokaðist * þetta)
+const THENSLA_NAEMNI = 1.8;       // stækkun = e^(hve mikið gómarnir glenntust út * þetta); saman->glennt ≈ 2.2×
+const TYND_SLEPPIR = 300;         // ms: gríphönd sem hverfur lengur (hreyfiþoka í kasti) sleppir; styttri brottföll þolast
 const GRIP_NAD = 350;             // ms: hönd sem var yfir hlut rétt áður en hún krepptist má grípa
 const KALLA_TIMI = 900;           // ms: miða leysi á hlut svona lengi = kalla hann til sín
 const MAX_HLUTIR = 8;
@@ -30,6 +32,8 @@ const SKIPUN_LISTI = { Victory: 'xray', Thumb_Up: 'nyr', Thumb_Down: 'eyda', ILo
 
 const $ = (id) => document.getElementById(id);
 const stadaEl = $('stada'), adgerdEl = $('adgerd'), afkostEl = $('afkost'), sena = $('sena');
+const rakningAfkostEl = $('rakningAfkost');
+const skyringar = [...document.querySelectorAll('#skyring li')];
 const video = $('video'), hendur = $('hendur'), ctx = hendur.getContext('2d');
 const drawingUtils = new DrawingUtils(ctx);
 
@@ -39,11 +43,13 @@ const PR = Math.min(devicePixelRatio, 1.5);
 renderer.setPixelRatio(PR);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b1116);
-scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const pmrem = new THREE.PMREMGenerator(renderer), room = new RoomEnvironment();
+scene.environment = pmrem.fromScene(room, 0.04).texture;
+room.dispose(); pmrem.dispose();
 scene.environmentIntensity = 0.8;
 const videoTex = new THREE.VideoTexture(video);
 videoTex.colorSpace = THREE.SRGBColorSpace;
@@ -95,9 +101,12 @@ function stillaBakgrunn() {
 
 function stillaStaerd() {
   renderer.setSize(innerWidth, innerHeight, false);
+  // Bloom og myndavélin deila GPU með rakningunni; takmarka innri teikningu við 720p.
+  composer.setPixelRatio(Math.min(PR, Math.sqrt(1280 * 720 / (innerWidth * innerHeight))));
   composer.setSize(innerWidth, innerHeight);
   merkjaRenderer.setSize(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight;
+  camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(Math.PI / 8) * Math.max(1, 1.4 / camera.aspect)));
   camera.updateProjectionMatrix();
   stillaBakgrunn();
 }
@@ -167,6 +176,7 @@ function eyda(o) {
   for (const g of [...gripir]) if (g.hlutur === o) sleppa(g);
   if (mus?.hlutur === o) musSleppir();
   if (zoom?.hlutur === o) zoom = null;
+  if (thensla?.hlutur === o) thensla = null;
   if (tvaerKlipa?.hlutur === o) tvaerKlipa = null;
   if (virkur === o) virkur = null;
   agnir.spraut(o.group.position, 450, { radius: RADIUS * o.group.scale.x, hradi: 2.8, lif: 1.1, litur: LITIR.gulur, styrkur: 3.5 });
@@ -174,11 +184,15 @@ function eyda(o) {
 }
 
 function nullstilla() {
+  for (const g of [...gripir]) sleppa(g);
+  musSleppir();
+  zoom = thensla = tvaerKlipa = null;
   for (const o of hlutir) {
     if (o.fara !== null) continue;
     o.kalla = o.heima.clone();
     o.kallaQ = true;
     o.staerdMark = 1;
+    o.hradi.set(0, 0, 0);
     o.snHradi.set(0, 0, 0);
     if (o.xray) setjaXray(o, false);
   }
@@ -314,7 +328,7 @@ function stadaHlutar(o) {
   const g = gripir.find((x) => x.hlutur === o);
   if (g) return g.tegund === 'tvaer' ? 'tvaer' : 'grip';
   if (mus?.hlutur === o) return 'grip';
-  if (zoom?.hlutur === o || tvaerKlipa?.hlutur === o) return 'zoom';
+  if (zoom?.hlutur === o || thensla?.hlutur === o || tvaerKlipa?.hlutur === o) return 'zoom';
   if (leysirMork.has(o)) return 'midad';
   if (yfirMork.has(o) || musYfir === o) return 'yfir';
   return virkur === o ? 'virkur' : 'ekkert';
@@ -370,9 +384,9 @@ function uppfaeraUtlit(o, dt, t) {
 
 // ---------- hendur ----------
 const handir = new Map();   // auðkenni -> ástand handar (parað eftir staðsetningu, ekki Left/Right)
-let naestaId = 0, greinir = null, sidastiTimi = -1, rakningMs = 0;
+let naestaId = 0, sidastiTimi = -1, rakningMs = 0;
 const gripir = [];          // { tegund: 'ein'|'tvaer', hlutur, hendur: [id], ... }
-let zoom = null, tvaerKlipa = null, mus = null, kastT = -1e9;
+let zoom = null, thensla = null, tvaerKlipa = null, mus = null, kastT = -1e9;
 const M = new THREE.Matrix4(), A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3();
 
 /** Snúningur handar út frá raunverulegum 3D liðum (worldLandmarks) þegar þeir eru til. */
@@ -393,8 +407,43 @@ function ndcTilMyndar(n) {
 }
 const hondIGripi = (id) => gripir.find((g) => g.hendur.includes(id));
 
+let vinnari = null, vinnariUpptekinn = false, nyrRammi = false, rammaVakt = null;
+let videoCallback = null;
+let sidastaSvar = 0;
+let myndRammar = 0, greindirRammar = 0, talningT = performance.now(), myndFps = 0, rakningFps = 0, svarMs = 0, handMs = 0;
+// currentTime breytist ~190x/s í beinum straumi, svo það segir ekki hvort nýr rammi kom; rVFC gerir það
+const HEFUR_RVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+function hlustaARamma() {
+  myndRammar++; nyrRammi = true;
+  greinaHendur(performance.now());
+  videoCallback = video.requestVideoFrameCallback(hlustaARamma);
+}
+const RAKNING_BREIDD = 480; // Lófaleitin notar litla mynd; flytjum ekki 720p milli þráða.
+
+function hreinsaHendur() {
+  for (const g of [...gripir]) { g.hlutur.hradi.set(0, 0, 0); sleppa(g); }
+  handir.clear();
+  zoom = thensla = tvaerKlipa = null;
+  yfirMork.clear(); leysirMork.clear();
+  ctx.clearRect(0, 0, hendur.width, hendur.height);
+  uppfaeraHud([], performance.now());
+}
+
+function rakningarVilla(e) {
+  clearTimeout(rammaVakt);
+  vinnari?.terminate(); vinnari = null; vinnariUpptekinn = false;
+  delegateNafn = ''; rakningMs = 0;
+  hreinsaHendur();
+  stadaEl.textContent = `Handarakning stöðvaðist (${e.message}) – endurhlaðið síðuna; mús og lyklaborð virka áfram`;
+  console.error(e);
+}
+
+/** Kallað í hverjum ramma: sendir nýjan myndavélarramma til greiningar ef ekkert er í vinnslu. */
 function greinaHendur(nu) {
-  if (!greinir || video.readyState < 2 || video.currentTime === sidastiTimi) return;
+  if (document.hidden) return;
+  const tilbuinn = vinnari && !vinnariUpptekinn;
+  if (!tilbuinn || video.readyState < 2 || (HEFUR_RVFC ? !nyrRammi : video.currentTime === sidastiTimi)) return;
+  nyrRammi = false;
   sidastiTimi = video.currentTime;
   // myndavélin getur skipt um upplausn eftir að hún fer í gang (stundum 2x2 fyrst)
   if (hendur.width !== video.videoWidth || hendur.height !== video.videoHeight) {
@@ -403,24 +452,44 @@ function greinaHendur(nu) {
     va = video.videoWidth / video.videoHeight;
     stillaBakgrunn();
   }
-  const t0 = performance.now();
-  const r = greinir.recognizeForVideo(video, nu);
-  rakningMs += (performance.now() - t0 - rakningMs) * 0.1;
+  vinnariUpptekinn = true;
+  const w = vinnari;
+  rammaVakt = setTimeout(() => rakningarVilla(new Error('greining svaraði ekki')), sidastaSvar ? 3000 : 15000);
+  createImageBitmap(video, { resizeWidth: RAKNING_BREIDD, resizeHeight: Math.round(RAKNING_BREIDD / va) })
+    .then((bmp) => {
+      if (vinnari !== w) { bmp.close(); return; }
+      try { w.postMessage({ bmp, t: nu }, [bmp]); }
+      catch (e) { bmp.close(); throw e; }
+    })
+    .catch((e) => { if (vinnari === w) rakningarVilla(e); });
+}
 
+function vinnaUrHondum(r, nu) {
+  sidastaSvar = performance.now();
+  greindirRammar++;
+  svarMs = sidastaSvar - nu;
   const sest = new Set();
   const spor = [...handir.values()];
   const lofar = r.landmarks.map(lofaMidja);
-  const para = paraSpor(spor.map((h) => h.hrarLofi), lofar);
+  // spáð staðsetning (síðasta + hraði × tími): hröð hönd sem birtist aftur langt frá heldur auðkenni og gripi
+  const spad = spor.map((h) => { const dt = Math.min(nu - h.sidast, 300) / 1000;
+    return { x: h.hrarLofi.x + h.vMynd.x * dt, y: h.hrarLofi.y + h.vMynd.y * dt }; });
+  const para = paraSpor(spad, lofar, 0.45);
   r.landmarks.forEach((hrar, i) => {
     let h = para[i] >= 0 ? spor[para[i]] : null;
     if (!h) {
-      h = { id: ++naestaId, mykir: new Mykir(), mykirW: new Mykir(), stada: new HandStada(), dyptSia: new Sia1D(0.8, 1.5),
-        kSia: new Sia1D(1.2, 2), bend: new BendingaHald(), hnefi: false, zoom: false, v: { x: 0, y: 0 }, sidastYfir: null, sidast: nu };
+      h = { id: ++naestaId, mykir: new Mykir(), mykirW: new Mykir(), stada: new HandStada(), dyptSia: new Sia1D(3, 2.5),
+        kSia: new Sia1D(3, 3), uSia: new Sia1D(3, 3), bend: new BendingaHald(), hnefi: false, zoom: false, v: { x: 0, y: 0 }, vMynd: { x: 0, y: 0 }, sidastYfir: null, sidast: nu };
       handir.set(h.id, h);
+    }
+    if (h.hrarLofi) { // hraði í myndhnitum (á sek) fyrir spána hér að ofan
+      const dtm = Math.max((nu - h.sidast) / 1000, 1e-3);
+      h.vMynd.x += ((lofar[i].x - h.hrarLofi.x) / dtm - h.vMynd.x) * 0.6;
+      h.vMynd.y += ((lofar[i].y - h.hrarLofi.y) / dtm - h.vMynd.y) * 0.6;
     }
     h.hrarLofi = lofar[i];
     sest.add(h.id);
-    const fyrr = { hnefi: h.hnefi, zoom: h.zoom };
+    const fyrr = { hnefi: h.hnefi, zoom: h.zoom, thensla: h.thensla };
     h.lm = h.mykir.update(hrar, nu);              // myndhnit: staðsetning á skjá og teikning
     // worldLandmarks: liðir í raunverulegum metrum (3D). Kreppa, klípa og snúningur verða miklu áreiðanlegri
     // en úr flötum myndhnitum, sérstaklega þegar höndin hallar. Án þeirra (t.d. í prófunum) er notað myndhnit.
@@ -435,37 +504,44 @@ function greinaHendur(nu) {
     }
     h.ndc = n;
     h.sidast = nu;
+    h.saest = sidastaSvar;
     h.yfir = naestiHlutur(n.x, n.y);
     if (h.yfir) h.sidastYfir = { hlutur: h.yfir, t: nu };
     // dýpt: stærð handar Í MYNDINNI (síuð á log-skala); 5% suð = 5% stökk í fjarlægð ef ósíað
     h.staerdF = Math.exp(h.dyptSia.update(Math.log(handStaerd(h.lm, va)), nu));
-    const g = r.gestures[i]?.[0];
+    const g = heimur?.length === 21 ? flokkaBendingu(heimur) : flokkaBendingu(hrar, va);
     h.bending = g?.categoryName ?? 'None';
     h.vissa = g?.score ?? 0;
-    Object.assign(h, h.stada.update(h.wlm, h.bending, h.vissa, h.wAspekt));
+    // Flokka hráa liði: síun fyrir teikningu má ekki bæta töf ofan á staðfestingu bendingar.
+    Object.assign(h, h.stada.update(heimur?.length === 21 ? heimur : hrar, h.bending, h.vissa, h.wAspekt, nu));
     h.kF = h.kSia.update(h.klipuHlutfall, nu);
     h.nyrHnefi = h.hnefi && !fyrr.hnefi;
     h.nyttZoom = h.zoom && !fyrr.zoom;
+    h.uF = h.uSia.update(h.utbreidsla, nu);
+    h.nyThensla = h.thensla && !fyrr.thensla;
   });
-  for (const [k, h] of handir) if (!sest.has(k) && nu - h.sidast > 400) handir.delete(k);
+  for (const [k, h] of handir) if (!sest.has(k) && nu - h.sidast > 600) handir.delete(k);
   const synilegar = [...handir].filter(([k]) => sest.has(k));
   stjorna(synilegar, nu, sest);
 
   ctx.clearRect(0, 0, hendur.width, hendur.height);
-  for (const [id, h] of synilegar) teiknaHond(id, h);
+  for (const [id, h] of handir) if (sidastaSvar - h.saest <= 150) teiknaHond(id, h);
   teiknaTaugar();
+  handMs = performance.now() - sidastaSvar;
+  svarMs = performance.now() - nu;
 }
 
 /**
  * Kasthraði = tilfærsla handar yfir ~120 ms glugga (ekki hraði eins ramma, sem er fullur af suði).
  * Síðustu rammarnir eru sleppt þegar höndin opnaðist, því þá hægir hún á sér.
  */
-function kastHradi(saga, sleppaSidustu) {
-  const s = saga.slice(0, saga.length - sleppaSidustu);
+function kastHradi(saga, sleppaMs) {
+  const sidast = saga.at(-1)?.t ?? 0;
+  const s = saga.filter((e) => e.t <= sidast - sleppaMs);
   const nyjast = s.at(-1);
-  const elst = nyjast && s.find((e) => nyjast.t - e.t <= 120);
+  const elst = nyjast && (s.find((e) => e !== nyjast && nyjast.t - e.t <= 120) || s.at(-2));
   const v = new THREE.Vector3();
-  if (!elst || nyjast.t - elst.t < 30) return v;
+  if (!elst || nyjast.t - elst.t < 30 || nyjast.t - elst.t > 250) return v;
   v.subVectors(nyjast.p, elst.p).divideScalar((nyjast.t - elst.t) / 1000);
   v.z *= 0.5;                                // dýptin er óáreiðanlegasti ásinn
   return v.length() < 0.4 ? v.set(0, 0, 0)   // rólegt slepp = hluturinn verður kyrr og svífur
@@ -473,7 +549,9 @@ function kastHradi(saga, sleppaSidustu) {
 }
 
 function sleppa(g) {
-  gripir.splice(gripir.indexOf(g), 1);
+  const i = gripir.indexOf(g);
+  if (i < 0) return;
+  gripir.splice(i, 1);
   g.hlutur.heldur = null;
 }
 
@@ -518,6 +596,35 @@ function byrjaTvaer(g, nu) {
   hljod(600, 1400, 0.12, 0.05);
 }
 
+/**
+ * Einátta stærðarbending. att=-1: gildið (klípubil) lækkar = minnka; att=1: gildið (útbreiðsla) hækkar = stækka.
+ * "best" er lengsta sem höndin hefur náð; bakki hún um >0.15 byrjar ný umferð frá núverandi stærð.
+ */
+function staerdBending(st, stadaLykill, nyLykill, gildiLykill, att, naemni, synilegar, nu) {
+  if (st && (!handir.has(st.lykill) || st.hlutur.fara !== null)) st = null;
+  if (st && !handir.get(st.lykill)[stadaLykill]) {
+    const h = handir.get(st.lykill);
+    // Full glenna lýkur bendingunni en síðasta sýnið þarf samt að stækka hlutinn.
+    if (stadaLykill === 'thensla' && h.utbreidsla > 0.6 && synilegar.some(([id]) => id === st.lykill)) {
+      st.hlutur.staerdMark = klemma(st.s0 * Math.exp((Math.max(st.best, h.utbreidsla) - st.v0) * naemni));
+    }
+    return null;
+  }
+  if (!st) {
+    const ny = synilegar.find(([, h]) => h[nyLykill]);
+    const mark = ny && (ny[1].yfir || virkur);
+    if (!mark) return null;
+    const v = ny[1][gildiLykill];
+    st = { lykill: ny[0], hlutur: mark, v0: v, best: v, s0: mark.staerdMark, fyrir: mark.staerdMark, t0: nu };
+  }
+  if (!synilegar.some(([id]) => id === st.lykill)) return st;
+  const v = handir.get(st.lykill)[gildiLykill];
+  if ((v - st.best) * att > 0) st.best = v;
+  else if ((st.best - v) * att > 0.15) { st.s0 = st.hlutur.staerdMark; st.v0 = st.best = v; }
+  st.hlutur.staerdMark = klemma(st.s0 * Math.exp((st.best - st.v0) * naemni));
+  return st;
+}
+
 function framkvaema(skipun, h) {
   const mark = h.yfir || virkur;
   if (skipun === 'xray' && mark) { setjaXray(mark, !mark.xray); mark.pulsT = 0; hljod(500, 800, 0.15, 0.04); }
@@ -537,7 +644,7 @@ function stjorna(synilegar, nu, sest) {
       continue;
     }
     const h0 = handir.get(g.hendur[0]);
-    g.hlutur.hradi.copy(g.tegund === 'ein' ? kastHradi(g.saga, h0 && !h0.hnefi ? 3 : 0) : V.set(0, 0, 0));
+    g.hlutur.hradi.copy(g.tegund === 'ein' ? kastHradi(g.saga, h0 && !h0.hnefi ? 100 : 0) : V.set(0, 0, 0));
     if (g.hlutur.hradi.lengthSq() > 0) kastT = nu;
     sleppa(g);
     hljod(900, 420);
@@ -548,6 +655,7 @@ function stjorna(synilegar, nu, sest) {
     if (!h.nyrHnefi || hondIGripi(id)) continue;
     // hönd á leið í hnefa fór kannski í gegnum zoom-stöðu: afturkalla þá stærðarbreytingu
     if (zoom?.lykill === id) { if (nu - zoom.t0 < 600) zoom.hlutur.staerdMark = zoom.fyrir; zoom = null; }
+    if (thensla?.lykill === id) { if (nu - thensla.t0 < 600) thensla.hlutur.staerdMark = thensla.fyrir; thensla = null; }
     // lófinn færist meðan höndin krepptist, svo "yfir hlutnum rétt áðan" dugar
     const o = h.sidastYfir && nu - h.sidastYfir.t <= GRIP_NAD ? h.sidastYfir.hlutur : null;
     if (!o || o.fara !== null || mus?.hlutur === o) continue;
@@ -569,8 +677,9 @@ function stjorna(synilegar, nu, sest) {
       g.offset.multiplyScalar(Math.exp(-5 * dtv)); // hluturinn dregst inn í lófann
       o.heldur.stada.copy(p).add(g.offset);
       const qNy = handQ(h, Q2);
-      // stökk yfir ~57° á einum ramma er rakningarvilla (höndin á rönd), ekki raunverulegur snúningur
-      if (g.qH.angleTo(qNy) < 1) g.qH.slerp(qNy, 0.35);
+      // Hunsa stakt stórt stökk, en samþykkja nýja stöðu ef næsta sýni staðfestir hana.
+      if (g.qH.angleTo(qNy) < 1 || g.qSidast?.angleTo(qNy) < 0.25) g.qH.slerp(qNy, 1 - Math.exp(-20 * dtv));
+      (g.qSidast ??= new THREE.Quaternion()).copy(qNy);
       o.heldur.snuningur.copy(g.qH).multiply(g.qH0inv).multiply(g.qO0);
     } else if (g.tegund === 'tvaer' && g.hendur.every((id) => sest.has(id))) {
       const [ha, hb] = g.hendur.map((id) => handir.get(id));
@@ -588,7 +697,7 @@ function stjorna(synilegar, nu, sest) {
   // 4. opinn lófi strokinn hratt yfir lausan hlut = snúa honum (eins og að snúa hnetti)
   for (const [, h] of synilegar) {
     const o = h.yfir;
-    const strok = o && !o.heldur && !h.hnefi && !h.zoom && !h.klipa && Math.hypot(h.v.x, h.v.y) > 1.6;
+    const strok = o && !o.heldur && !h.hnefi && !h.zoom && !h.thensla && !h.klipa && Math.hypot(h.v.x, h.v.y) > 1.6;
     if (strok) {
       o.snHradi.y = THREE.MathUtils.clamp(o.snHradi.y + h.v.x * 0.25, -14, 14);
       o.snHradi.x = THREE.MathUtils.clamp(o.snHradi.x - h.v.y * 0.25, -14, 14);
@@ -626,32 +735,27 @@ function stjorna(synilegar, nu, sest) {
 
   // 6. skipanir: halda ✌️ 👍 👎 🤟
   for (const [id, h] of synilegar) {
-    const upptekin = h.hnefi || hondIGripi(id) || h.zoom;
+    const upptekin = h.hnefi || hondIGripi(id) || h.zoom || h.thensla;
     h.skipunStada = h.bend.update(upptekin ? null : h.bending, h.vissa, nu);
     if (h.skipunStada.skipun) framkvaema(h.skipunStada.skipun, h);
   }
 
   // 7. tvær hendur að klípa: fjarlægð milli þeirra stýrir stærð virks hlutar
-  const klipur = synilegar.filter(([id, h]) => h.klipa && !hondIGripi(id));
+  const klipur = synilegar.filter(([id, h]) => h.klipa && !h.thensla && !hondIGripi(id));
   if (klipur.length === 2 && (tvaerKlipa || virkur)) {
     const [a, b] = klipur.map(([, h]) => klipuPunktur(h.lm));
     if (!tvaerKlipa) tvaerKlipa = { hlutur: virkur, sia: new Sia1D(1, 1), s0: virkur.staerdMark };
     const d = tvaerKlipa.sia.update(fjarlaegd(a, b, va), nu);
     tvaerKlipa.d0 ??= Math.max(d, 1e-3);
     tvaerKlipa.hlutur.staerdMark = klemma(tvaerKlipa.s0 * d / tvaerKlipa.d0);
-    zoom = null;
+    zoom = thensla = null;
   } else tvaerKlipa = null;
 
-  // 8. ein hönd: þumall og vísifingur sundur/saman eins og á síma
+  // 8. ein hönd: klípa saman = minnka; allir gómar saman og glennt út = stækka.
+  //    Hvor um sig virkar bara í eina átt og má endurtaka (opna klípuna og klípa aftur = minnka meira).
   if (!tvaerKlipa) {
-    if (zoom && (!handir.get(zoom.lykill)?.zoom || zoom.hlutur.fara !== null)) zoom = null;
-    if (!zoom) {
-      const ny = synilegar.find(([, h]) => h.nyttZoom);
-      const mark = ny && (ny[1].yfir || virkur);
-      if (mark) zoom = { lykill: ny[0], hlutur: mark, k0: ny[1].kF, s0: mark.staerdMark, fyrir: mark.staerdMark, t0: nu };
-    }
-    // hlutfall (k/k0) springur ef byrjað er með litlu bili; veldisfall af mismun er jafnt allt sviðið
-    if (zoom) zoom.hlutur.staerdMark = klemma(zoom.s0 * Math.exp((handir.get(zoom.lykill).kF - zoom.k0) * ZOOM_NAEMNI));
+    zoom = staerdBending(zoom, 'zoom', 'nyttZoom', 'kF', -1, ZOOM_NAEMNI, synilegar, nu);
+    thensla = staerdBending(thensla, 'thensla', 'nyThensla', 'uF', 1, THENSLA_NAEMNI, synilegar, nu);
   }
 
   yfirMork = new Set(synilegar.map(([, h]) => h.yfir).filter(Boolean));
@@ -673,11 +777,11 @@ function texti(str, x, y, litur) {
 
 function teiknaHond(id, h) {
   const W = hendur.width, H = hendur.height, lm = h.lm;
-  const litur = hondIGripi(id) ? CSS.skaer : h.leysir ? CSS.raudur : h.zoom || h.klipa ? CSS.gulur : CSS.blar;
+  const litur = hondIGripi(id) ? CSS.skaer : h.leysir ? CSS.raudur : h.zoom || h.thensla || h.klipa ? CSS.gulur : CSS.blar;
   ctx.save();
   ctx.shadowColor = litur;
   ctx.shadowBlur = 14;
-  drawingUtils.drawConnectors(lm, GestureRecognizer.HAND_CONNECTIONS, { color: litur, lineWidth: 3 });
+  drawingUtils.drawConnectors(lm, HandLandmarker.HAND_CONNECTIONS, { color: litur, lineWidth: 3 });
   if (h.zoom || h.klipa) drawingUtils.drawConnectors(lm, [{ start: THUMB_TIP, end: INDEX_TIP }], { color: CSS.gulur, lineWidth: 2 });
   drawingUtils.drawLandmarks(lm, { color: litur, fillColor: '#06121a', lineWidth: 2, radius: 3 });
   ctx.strokeStyle = litur;
@@ -743,7 +847,8 @@ function uppfaeraHud(synilegar, nu) {
   if (tvoGrip) { virk.add('tvaerGrip'); lysing ??= `Tveggja handa stjórn: ${tvoGrip.hlutur.nafn}`; }
   if (gripir.length) { virk.add('grip'); lysing ??= gripir.length > 1 ? `Heldur á ${gripir.length} hlutum` : `Heldur á: ${gripir[0].hlutur.nafn}`; }
   if (tvaerKlipa) { virk.add('tvaer'); lysing ??= 'Tveggja handa klípa'; }
-  if (zoom) { virk.add('zoom'); lysing ??= `Stækka / minnka: ${zoom.hlutur.nafn}`; }
+  if (zoom) { virk.add('zoom'); lysing ??= `Minnka: ${zoom.hlutur.nafn}`; }
+  if (thensla) { virk.add('thensla'); lysing ??= `Stækka: ${thensla.hlutur.nafn}`; }
   for (const [, h] of synilegar) {
     if (h.leysir) { virk.add('leysir'); lysing ??= h.leysir.hlutur ? `Miðar á: ${h.leysir.hlutur.nafn}` : 'Leysir'; }
     if (h.skipunStada?.nafn) { virk.add(SKIPUN_LISTI[h.skipunStada.nafn]); lysing ??= `Haltu: ${SKIPUN_TEXTI[h.skipunStada.nafn].toLowerCase()}`; }
@@ -751,8 +856,8 @@ function uppfaeraHud(synilegar, nu) {
   }
   if (nu - kastT < 600) { virk.add('kast'); lysing ??= 'Kastað!'; }
   lysing ??= synilegar.length ? (yfirMork.size ? 'Kreppa hnefa til að grípa' : `${synilegar.length === 2 ? 'Tvær hendur' : 'Hönd'} sést`) : 'Engin hönd';
-  adgerdEl.textContent = lysing;
-  document.querySelectorAll('#skyring li').forEach((li) => li.classList.toggle('virk', virk.has(li.dataset.a)));
+  if (adgerdEl.textContent !== lysing) adgerdEl.textContent = lysing;
+  skyringar.forEach((li) => li.classList.toggle('virk', virk.has(li.dataset.a)));
 }
 
 // ---------- mús og lyklaborð (virkar líka án myndavélar) ----------
@@ -773,10 +878,11 @@ function musHlutur(e) {
   return { n, o: best };
 }
 sena.addEventListener('pointerdown', (e) => {
+  if (!e.isPrimary || e.button !== 0 || mus) return;
   const { n, o } = musHlutur(e);
   if (!o || gripir.some((g) => g.hlutur === o)) return;
   const d0 = camera.position.distanceTo(o.group.position);
-  mus = { hlutur: o, d0, offset: o.group.position.clone().sub(geislaPunktur(n.x, n.y, d0)) };
+  mus = { hlutur: o, d0, pointerId: e.pointerId, offset: o.group.position.clone().sub(geislaPunktur(n.x, n.y, d0)) };
   o.heldur = { stada: o.group.position.clone(), snuningur: null };
   o.kalla = null;
   o.hradi.set(0, 0, 0);
@@ -787,6 +893,7 @@ sena.addEventListener('pointerdown', (e) => {
 });
 sena.addEventListener('pointermove', (e) => {
   if (mus) {
+    if (e.pointerId !== mus.pointerId) return;
     const n = musNdc(e);
     geislaPunktur(n.x, n.y, mus.d0, mus.hlutur.heldur.stada).add(mus.offset);
   } else {
@@ -794,22 +901,29 @@ sena.addEventListener('pointermove', (e) => {
     if (musYfir) virkur = musYfir;
   }
 });
-function musSleppir() {
+function musSleppir(e) {
   if (!mus) return;
+  if (e?.pointerId !== undefined && e.pointerId !== mus.pointerId) return;
+  const { pointerId } = mus;
+  if (e?.type === 'pointercancel' || e?.type === 'lostpointercapture' || e?.type === 'blur') mus.hlutur.hradi.set(0, 0, 0);
   mus.hlutur.heldur = null; // hraðinn sem mældist meðan haldið var heldur áfram = kast
   mus = null;
+  if (sena.hasPointerCapture(pointerId)) sena.releasePointerCapture(pointerId);
   sena.classList.remove('heldur');
   hljod(900, 420);
 }
 sena.addEventListener('pointerup', musSleppir);
 sena.addEventListener('pointercancel', musSleppir);
+sena.addEventListener('lostpointercapture', musSleppir);
+addEventListener('blur', musSleppir);
 sena.addEventListener('wheel', (e) => {
   e.preventDefault();
-  const o = musYfir || virkur;
-  if (o) o.staerdMark = klemma(o.staerdMark * Math.exp(-e.deltaY * 0.0015));
+  const o = mus?.hlutur || musHlutur(e).o;
+  const delta = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
+  if (o) { virkur = o; o.staerdMark = klemma(o.staerdMark * Math.exp(-delta * 0.0015)); }
 }, { passive: false });
 addEventListener('keydown', (e) => {
-  if (e.target.closest?.('button')) return;
+  if (e.ctrlKey || e.altKey || e.metaKey || e.repeat || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
   const k = e.key.toLowerCase();
   if (k === 'r') nullstilla();
   if (k === 'n') birtaNaesta(new THREE.Vector3((Math.random() - 0.5) * 2.4, (Math.random() - 0.5) * 0.8, -0.3));
@@ -819,61 +933,99 @@ addEventListener('keydown', (e) => {
 $('nullstilla').addEventListener('click', nullstilla);
 
 // ---------- MediaPipe ----------
-async function buaTilGreini() {
-  const vision = await FilesetResolver.forVisionTasks(MP_URL);
-  for (const delegate of ['GPU', 'CPU']) {
-    try {
-      const g = await GestureRecognizer.createFromOptions(vision, {
-        baseOptions: { modelAssetPath: LIKAN_URL, delegate },
-        runningMode: 'VIDEO',
-        numHands: 2,
-        minHandDetectionConfidence: 0.6,
-        minHandPresenceConfidence: 0.6,
-        minTrackingConfidence: 0.5,
-      });
-      return { g, delegate };
-    } catch (e) {
-      console.warn(`delegate ${delegate} tókst ekki`, e);
-    }
-  }
-  throw new Error('Gat ekki búið til GestureRecognizer');
+// lágir þröskuldar: rakning heldur höndinni frekar en að missa hana og leita upp á nýtt (hæga lófaleitin)
+const VALKOSTIR = { runningMode: 'VIDEO', numHands: 2, minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.3, minTrackingConfidence: 0.3 }; // lágt: óskýr hönd á hraðferð á að haldast í rakningu, ekki falla út
+
+/** Rakning keyrir eingöngu í worker: líkanið má aldrei stöðva teikningu eða mús. */
+function raesaVinnara() {
+  return new Promise((leysa, hafna) => {
+    const w = new Worker(new URL('./greinir-worker.js', import.meta.url));
+    let tilbuinn = false;
+    const villa = (e) => {
+      clearTimeout(vakt);
+      if (tilbuinn) { if (vinnari === w) rakningarVilla(e); }
+      else { w.terminate(); hafna(e); }
+    };
+    const vakt = setTimeout(() => villa(new Error('worker ræsing svaraði ekki')), 30000);
+    w.onerror = (e) => villa(new Error(e.message || 'worker villa'));
+    w.onmessageerror = () => villa(new Error('worker skilaboð skemmdust'));
+    w.onmessage = (e) => {
+      if (e.data.villa) { villa(new Error(e.data.villa)); return; }
+      if (e.data.tilbuinn) { clearTimeout(vakt); tilbuinn = true; vinnari = w; leysa(e.data.tilbuinn); return; }
+      if (vinnari !== w) return;
+      clearTimeout(rammaVakt);
+      vinnariUpptekinn = false;
+      if (!e.data.r) return;
+      if (document.hidden) return;
+      rakningMs += (e.data.ms - rakningMs) * 0.1;
+      vinnaUrHondum(e.data.r, e.data.t);
+      greinaHendur(performance.now());
+    };
+    w.postMessage({ init: true, mpModul: MP_MODUL, mpWasm: MP_URL, likan: LIKAN_URL, valkostir: VALKOSTIR });
+  });
 }
 
 let delegateNafn = '';
+let myndStraumur = null;
 async function byrja() {
   try {
-    // 60 fps helmingar töfina milli handarhreyfingar og rakningar (myndavélin gefur minna ef hún getur ekki meira)
+    // 30 fps: rakningin nær ekki meira, og 60 fps styttir lýsingartíma = dekkri, óskýrari mynd = hönd tapast
     const straumur = await navigator.mediaDevices.getUserMedia({
       video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 60 }, facingMode: 'user' },
     });
+    myndStraumur = straumur;
+    straumur.getVideoTracks()[0]?.addEventListener('ended', () => rakningarVilla(new Error('myndavélin aftengd')), { once: true });
     video.srcObject = straumur;
     await video.play();
+    if (HEFUR_RVFC) videoCallback = video.requestVideoFrameCallback(hlustaARamma);
     scene.background = videoTex;
     scene.backgroundIntensity = 0.9;
     stadaEl.textContent = 'Hleð inn handalíkani…';
-    const { g, delegate } = await buaTilGreini();
-    greinir = g;
-    delegateNafn = delegate;
+    try {
+      delegateNafn = `${await raesaVinnara()}, worker`;
+    } catch (e) {
+      rakningarVilla(e); return;
+    }
+    const delegate = delegateNafn;
     const fpsMyndavel = straumur.getVideoTracks()[0]?.getSettings().frameRate;
     stadaEl.textContent = `Kerfi virkt · ${delegate} · ${fpsMyndavel ? Math.round(fpsMyndavel) + ' fps myndavél · ' : ''}allt að 2 hendur`;
   } catch (e) {
+    myndStraumur?.getTracks().forEach((track) => track.stop()); myndStraumur = null;
     stadaEl.textContent = `Myndavél ekki tiltæk (${e.message}) – notaðu mús og lyklaborð`;
     console.error(e);
   }
 }
 byrja();
+addEventListener('visibilitychange', () => { if (document.hidden) { musSleppir({type:'blur'}); hreinsaHendur(); } });
+addEventListener('pagehide', () => {
+  clearTimeout(rammaVakt);
+  vinnari?.terminate(); vinnari = null;
+  vinnariUpptekinn = nyrRammi = false; sidastaSvar = 0;
+  if (videoCallback !== null) video.cancelVideoFrameCallback(videoCallback);
+  videoCallback = null;
+  myndStraumur?.getTracks().forEach((track) => track.stop());
+  hreinsaHendur();
+});
+addEventListener('pageshow', (e) => { if (e.persisted) byrja(); });
 
 // ræsing: hlutirnir birtast einn af öðrum
 [[0, 0, 0], [-1.7, 0.15, -0.4], [1.7, 0.15, -0.4]].forEach((p, i) =>
   setTimeout(() => birtaNaesta(new THREE.Vector3(...p)), 250 + i * 320));
 
 // ---------- lykkja ----------
-let sidastT = 0, fps = 60;
+let sidastT = 0, teikniT = 0, rammaMs = 1000 / 60;
 renderer.setAnimationLoop((t) => {
-  const dt = THREE.MathUtils.clamp((t - sidastT) / 1000, 1e-3, 0.05);
+  if (!HEFUR_RVFC) greinaHendur(performance.now());
+  // 60 teikningar/s skilja GPU-tíma eftir fyrir handalíkanið á 120–240 Hz skjám.
+  const bil = 1000 / 60;
+  const skref = Math.floor((t - teikniT + 0.5) / bil);
+  if (skref < 1) return;
+  teikniT += skref * bil;
+  const lidinn = sidastT ? t - sidastT : 1000 / 60;
+  const dt = THREE.MathUtils.clamp(lidinn / 1000, 1e-3, 0.05);
   sidastT = t;
   const ts = t / 1000;
-  greinaHendur(performance.now());
+  if (handir.size && performance.now() - sidastaSvar > 400) hreinsaHendur();
   for (const o of hlutir) uppfaeraHlut(o, dt, ts);
   arekstrar(ts);
   for (let i = hlutir.length - 1; i >= 0; i--) {
@@ -889,10 +1041,17 @@ renderer.setAnimationLoop((t) => {
     sud.o.frequency.setTargetAtTime(55 + (haldinn ? haldinn.hradi.length() * 30 : 0), tn, 0.1);
   }
 
-  fps += (1 / dt - fps) * 0.05;
+  rammaMs += (lidinn - rammaMs) * 0.05;
+  const nu = performance.now();
+  if (nu - talningT >= 1000) {
+    myndFps = myndRammar * 1000 / (nu - talningT);
+    rakningFps = greindirRammar * 1000 / (nu - talningT);
+    myndRammar = greindirRammar = 0; talningT = nu;
+  }
   if (Math.floor(ts * 4) !== Math.floor((ts - dt) * 4)) {
-    const hendurSest = [...handir.values()].filter((h) => performance.now() - h.sidast < 200).length;
-    afkostEl.textContent = `${Math.round(fps)} fps · rakning ${rakningMs.toFixed(0)} ms${delegateNafn ? ` (${delegateNafn})` : ''} · ${hendurSest} hendur · ${virkir().length} hlutir`;
+    const hendurSest = [...handir.values()].filter((h) => nu - h.saest < 200).length;
+    afkostEl.textContent = `${Math.round(1000 / rammaMs)} fps · rakning ${rakningMs.toFixed(0)} ms${delegateNafn ? ` (${delegateNafn})` : ''} · ${hendurSest} hendur · ${virkir().length} hlutir`;
+    rakningAfkostEl.textContent = delegateNafn ? `Myndavél ${Math.round(myndFps)} r/s · greining ${Math.round(rakningFps)} r/s · töf ${Math.round(svarMs)} ms` : '';
   }
 
   composer.render(dt);
@@ -900,4 +1059,6 @@ renderer.setAnimationLoop((t) => {
 });
 
 // fyrir prófanir í vafra
-window.__kerfi = { hlutir, gripir, get virkur() { return virkur; }, setjaGreini(g) { greinir = g; }, birtaNaesta, eyda, setjaXray, nullstilla };
+window.__kerfi = { hlutir, gripir, handir, camera, get virkur() { return virkur; },
+  get afkost() { return { renderFps: 1000 / rammaMs, trackingMs: rakningMs, trackingFps: rakningFps, cameraFps: myndFps, latencyMs: svarMs, controlMs: handMs }; },
+  birtaNaesta, eyda, setjaXray, nullstilla };

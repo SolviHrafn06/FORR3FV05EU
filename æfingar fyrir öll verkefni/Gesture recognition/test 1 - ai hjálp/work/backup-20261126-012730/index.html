@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="is">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hólógram-vinnustöð</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- lög: 3D sena (með myndavél sem bakgrunn) > kantar > hendur > gagnamerki > HUD -->
+  <canvas id="sena"></canvas>
+  <div id="vinjetta"></div>
+  <canvas id="hendur"></canvas>
+  <!-- myndavélin sjálf er falin: hún er teiknuð inni í 3D senunni og lesin af MediaPipe -->
+  <div id="myndavel"><video id="video" autoplay playsinline muted></video></div>
+
+  <section id="hud">
+    <h1>Hólógram-vinnustöð</h1>
+    <p id="stada">Ræsi kerfi…</p>
+    <p class="adgerd" aria-live="polite"><span id="adgerd">Engin hönd</span></p>
+    <ul id="skyring">
+      <li data-a="grip">✊ Hnefi við hlut – grípa, færa, snúa úlnlið, draga nær/fjær</li>
+      <li data-a="tvaerGrip">✊✊ Báðar hendur á sama hlut – snúa og stækka með báðum</li>
+      <li data-a="kast">🖐️ Opna – sleppa · á ferð = kasta (hlutir rekast á)</li>
+      <li data-a="strok">👋 Strjúka hratt yfir hlut – snúa honum</li>
+      <li data-a="zoom">🤏 Klípa saman (hinir krepptir) – minnka · endurtaka = minnka meira</li>
+      <li data-a="thensla">🖐️ Allir gómar saman → glenna út – stækka · endurtaka = stækka meira</li>
+      <li data-a="tvaer">🤏🤏 Klípa með báðum – stærð</li>
+      <li data-a="leysir">☝️ Benda – leysir · haltu á hlut = kalla hann til þín</li>
+      <li data-a="xray">✌️ Halda – röntgen</li>
+      <li data-a="nyr">👍 Halda – nýr hlutur</li>
+      <li data-a="eyda">👎 Halda á hlut – eyða</li>
+      <li data-a="nullstilla">🤟 Halda – endurstilla allt</li>
+    </ul>
+    <p class="lykill">Mús: draga = grípa · skrun = stærð · <kbd>N</kbd> nýr · <kbd>X</kbd> röntgen · <kbd>Del</kbd> eyða · <kbd>R</kbd> endurstilla · smelltu fyrir hljóð</p>
+    <p id="afkost"></p>
+    <button id="nullstilla" type="button">Endurstilla</button>
+  </section>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>

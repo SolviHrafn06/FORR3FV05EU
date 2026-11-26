@@ -1,0 +1,4 @@
+[    3855ms] [LOG] I1126 10:42:19.483000 2136208 gl_context.cc:407] GL version: 3.0 (OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))), renderer: WebKit WebGL @ https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm/vision_wasm_internal.js:4660
+[    3858ms] [WARNING] W1126 10:42:19.494000 2136208 gl_context.cc:1118] OpenGL error checking is disabled @ https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm/vision_wasm_internal.js:8351
+[    3876ms] [LOG] Graph successfully started running. @ https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm/vision_wasm_internal.js:1371
+[   10408ms] [WARNING] W1126 10:42:26.044000 2136208 landmark_projection_calculator.cc:81] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX. @ https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm/vision_wasm_internal.js:8351

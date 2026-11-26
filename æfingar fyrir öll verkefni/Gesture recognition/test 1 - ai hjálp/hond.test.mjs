@@ -1,6 +1,6 @@
 // Keyrt með: node hond.test.mjs
 import assert from 'node:assert/strict';
-import { erHnefi, erZoomStada, klipuHlutfall, HandStada, handGrunnur, Mykir, Sia1D, paraSpor } from './hond.js';
+import { erHnefi, erZoomStada, klipuHlutfall, utbreidsla, HandStada, flokkaBendingu, handGrunnur, Mykir, Sia1D, paraSpor } from './hond.js';
 
 // gervihönd: úlnliður neðst, fingur upp. kreppt = gómur dreginn niður að hnúa.
 function hond({ kreppt = [false, false, false, false], thumb = { x: 0.36, y: 0.58 } } = {}) {
@@ -80,6 +80,10 @@ for (let i = 0; i < 60; i++) ut = f.update(opin.map((p) => ({ ...p, x: p.x + (i 
 assert.ok(Math.abs(ut[0].x - 0.5) < 0.002, 'flökt á að dempast');
 for (let i = 60; i < 66; i++) ut = f.update(opin.map((p) => ({ ...p, x: p.x + 0.2 })), i * 33);
 assert.ok(Math.abs(ut[0].x - 0.7) < 0.02, 'hröð hreyfing á að ná markinu innan 200 ms');
+const response = new Mykir();
+response.update(opin, 0);
+for (let i = 1; i <= 3; i++) ut = response.update(opin.map(p => ({...p,x:p.x+.02})), i*1000/30);
+assert.ok(Math.abs(ut[0].x-.52)<.005, 'smá hreyfing fylgir innan 100 ms, ekki bara hröð hreyfing');
 
 // 👍 (krepptir fingur, þumall upp) grípur ekki, hvorki eftir fingrum né merki líkansins
 const thumall = hond({ kreppt: [true, true, true, true], thumb: { x: 0.40, y: 0.35 } });
@@ -95,6 +99,24 @@ const s9 = new HandStada();
 for (let i = 0; i < 6; i++) s9.update(zoomVitt, 'Pointing_Up', 0.9);
 assert.equal(s9.zoom, false, 'Pointing_Up er leysir, ekki zoom');
 
+// útþensla: allir gómar saman -> byrjar eftir 3 ramma, grípur ekki; glennt út -> lýkur; hnefi byrjar hana ekki
+const saman = hond();
+[4, 8, 12, 16, 20].forEach((i, k) => { saman[i] = { x: 0.49 + k * 0.005, y: 0.38, z: 0 }; });
+const glennt = hond({ thumb: { x: 0.2, y: 0.55 } });
+[8, 12, 16, 20].forEach((i, k) => { glennt[i] = { x: 0.3 + k * 0.13, y: 0.36, z: 0 }; });
+assert.ok(utbreidsla(saman) < 0.2 && utbreidsla(glennt) > 0.6, 'útbreiðsla: saman lítil, glennt mikil');
+const s10 = new HandStada();
+s10.update(saman); s10.update(saman);
+assert.equal(s10.thensla, false, '2 rammar duga ekki');
+s10.update(saman);
+assert.equal(s10.thensla, true, 'gómar saman = útþensla');
+assert.equal(s10.hnefi, false, 'gómar saman er ekki grip');
+s10.update(glennt);
+assert.equal(s10.thensla, false, 'full opnun lýkur útþenslu');
+const s11 = new HandStada();
+for (let i = 0; i < 5; i++) s11.update(hnefi);
+assert.equal(s11.thensla, false, 'hnefi er ekki útþensla');
+
 // Sia1D: dempar flökt
 const sd = new Sia1D(0.8, 1.5);
 let sv;
@@ -105,5 +127,41 @@ assert.ok(Math.abs(sv - 1) < 0.02);
 assert.deepEqual(paraSpor([{ x: 0.2, y: 0.5 }, { x: 0.8, y: 0.5 }], [{ x: 0.78, y: 0.5 }, { x: 0.22, y: 0.52 }]), [1, 0]);
 assert.deepEqual(paraSpor([{ x: 0.2, y: 0.5 }], [{ x: 0.9, y: 0.1 }]), [-1], 'of langt = ný hönd');
 assert.deepEqual(paraSpor([], [{ x: 0.5, y: 0.5 }]), [-1]);
+assert.deepEqual(paraSpor([{x:0,y:0},{x:.3,y:0}], [{x:.2,y:0},{x:.4,y:0}]), [0,1], 'nánasta par má ekki láta hina höndina missa auðkenni');
+assert.deepEqual(paraSpor([{x:.5,y:.5}], []), []);
+
+// Hæg rakning má ekki breyta 100–170 ms staðfestingu í hálfa sekúndu.
+for (const interval of [1000 / 30, 100]) {
+  const slow = new HandStada();
+  assert.equal(slow.update(hnefi, null, 0, 1, 1000).hnefi, false);
+  assert.equal(slow.update(hnefi, null, 0, 1, 1000 + interval).hnefi, true);
+  slow.update(opin, null, 0, 1, 1000 + interval * 2);
+  slow.update(opin, null, 0, 1, 1000 + interval * 3);
+  slow.update(opin, null, 0, 1, 1000 + interval * 4);
+  assert.equal(slow.hnefi, false);
+  const pinch = new HandStada();
+  for (let t = 1000; t <= 1201; t += interval) pinch.update(zoomVitt, null, 0, 1, t);
+  assert.equal(pinch.zoom, true);
+}
+const gap = new HandStada();
+gap.update(hnefi, null, 0, 1, 1000);
+assert.equal(gap.update(hnefi, null, 0, 1, 2000).hnefi, false, 'stök sýni með löngu bili staðfesta ekki grip');
+
+// --- flokkaBendingu: bendingar úr liðum (HandLandmarker) ---
+const bending = (lm) => flokkaBendingu(lm).categoryName;
+const medThumal = (lm, tip, mcp) => { lm[4] = { ...tip, z: 0 }; lm[2] = { ...mcp, z: 0 }; return lm; };
+const allt = [true, true, true, true];
+assert.equal(bending(opin), 'Open_Palm');
+assert.equal(bending(hnefi), 'Closed_Fist');
+assert.equal(bending(medThumal(hond({ kreppt: allt }), { x: 0.4, y: 0.3 }, { x: 0.42, y: 0.6 })), 'Thumb_Up');
+assert.equal(bending(medThumal(hond({ kreppt: allt }), { x: 0.4, y: 0.95 }, { x: 0.42, y: 0.65 })), 'Thumb_Down');
+assert.equal(bending(medThumal(hond({ kreppt: allt }), { x: 0.2, y: 0.6 }, { x: 0.4, y: 0.62 })), 'None', 'þumall til hliðar er hvorki upp né niður');
+assert.equal(bending(hond({ kreppt: [false, false, true, true] })), 'Victory');
+assert.equal(bending(hond({ kreppt: [false, true, true, false], thumb: { x: 0.25, y: 0.6 } })), 'ILoveYou');
+assert.equal(bending(hond({ kreppt: [false, true, true, false] })), 'None', '🤟 þarf þumal út');
+assert.equal(bending(hond({ kreppt: [false, true, true, true], thumb: { x: 0.47, y: 0.53 } })), 'Pointing_Up');
+assert.equal(bending(zoomVitt), 'None', 'zoom-staða (laus þumall) má ekki verða Pointing_Up');
+assert.equal(bending(zoomLokad), 'None');
+assert.equal(flokkaBendingu(opin).score, 1);
 
 console.log('hond.js: öll próf stóðust');

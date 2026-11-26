@@ -17,7 +17,7 @@
 </head>
 <body>
   <!-- lög: 3D sena (með myndavél sem bakgrunn) > kantar > hendur > gagnamerki > HUD -->
-  <canvas id="sena"></canvas>
+  <canvas id="sena" aria-label="Þrívíð hólógramasena"></canvas>
   <div id="vinjetta"></div>
   <canvas id="hendur"></canvas>
   <!-- myndavélin sjálf er falin: hún er teiknuð inni í 3D senunni og lesin af MediaPipe -->
@@ -25,14 +25,17 @@
 
   <section id="hud">
     <h1>Hólógram-vinnustöð</h1>
-    <p id="stada">Ræsi kerfi…</p>
+    <p id="stada" role="status">Ræsi kerfi…</p>
     <p class="adgerd" aria-live="polite"><span id="adgerd">Engin hönd</span></p>
+    <details id="leidbeiningar">
+    <summary>Stjórnun og bendingar</summary>
     <ul id="skyring">
       <li data-a="grip">✊ Hnefi við hlut – grípa, færa, snúa úlnlið, draga nær/fjær</li>
       <li data-a="tvaerGrip">✊✊ Báðar hendur á sama hlut – snúa og stækka með báðum</li>
       <li data-a="kast">🖐️ Opna – sleppa · á ferð = kasta (hlutir rekast á)</li>
       <li data-a="strok">👋 Strjúka hratt yfir hlut – snúa honum</li>
-      <li data-a="zoom">🤏 Þumall + vísifingur, hinir krepptir – stækka/minnka</li>
+      <li data-a="zoom">🤏 Klípa saman (hinir krepptir) – minnka · endurtaka = minnka meira</li>
+      <li data-a="thensla">🖐️ Allir gómar saman → glenna út – stækka · endurtaka = stækka meira</li>
       <li data-a="tvaer">🤏🤏 Klípa með báðum – stærð</li>
       <li data-a="leysir">☝️ Benda – leysir · haltu á hlut = kalla hann til þín</li>
       <li data-a="xray">✌️ Halda – röntgen</li>
@@ -41,7 +44,9 @@
       <li data-a="nullstilla">🤟 Halda – endurstilla allt</li>
     </ul>
     <p class="lykill">Mús: draga = grípa · skrun = stærð · <kbd>N</kbd> nýr · <kbd>X</kbd> röntgen · <kbd>Del</kbd> eyða · <kbd>R</kbd> endurstilla · smelltu fyrir hljóð</p>
+    </details>
     <p id="afkost"></p>
+    <p id="rakningAfkost"></p>
     <button id="nullstilla" type="button">Endurstilla</button>
   </section>
 

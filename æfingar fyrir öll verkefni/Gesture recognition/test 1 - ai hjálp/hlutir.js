@@ -50,6 +50,7 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 function dos({ gloi }) {
   const g = new THREE.Group();
   const setja = (obj) => {
+    if (g.userData.fjarlaegdur) { losa(obj); return; }
     const box = new THREE.Box3().setFromObject(obj);
     obj.position.sub(box.getCenter(new THREE.Vector3()));
     const wrap = new THREE.Group();
@@ -59,6 +60,7 @@ function dos({ gloi }) {
     obj.traverse((m) => { if (m.isMesh) meshes.push(m); }); // safna fyrst: annars fer traverse inn í glóann
     for (const m of meshes) { m.castShadow = true; m.add(new THREE.Mesh(m.geometry, gloi)); }
     g.add(wrap);
+    if (g.userData.xray) setjaXray({ innihald: g }, true);
   };
   loader.load(MODEL_SLOD, (gltf) => setja(gltf.scene), undefined, () => {
     console.warn('Fann ekki ' + MODEL_SLOD + ', nota varahlut');
@@ -236,11 +238,31 @@ export function buaTilHlut(def) {
 }
 
 export function setjaISenu(o, scene) { scene.add(o.group, o.holo, o.puls, o.slod, o.merki); }
-export function takaUrSenu(o, scene) { scene.remove(o.group, o.holo, o.puls, o.slod, o.merki); } // CSS2DObject fjarlægir HTML sjálft
+function losa(...rot) {
+  const geo = new Set(), efni = new Set(), texturur = new Set();
+  for (const r of rot) r.traverse((m) => {
+    if (m.geometry && !Object.values(GEO).includes(m.geometry)) geo.add(m.geometry);
+    for (const e of (Array.isArray(m.material) ? m.material : [m.material])) if (e) efni.add(e);
+  });
+  for (const e of efni) {
+    for (const v of Object.values(e)) if (v?.isTexture) texturur.add(v);
+    e.dispose();
+  }
+  for (const g of geo) g.dispose();
+  for (const t of texturur) t.dispose();
+}
+
+export function takaUrSenu(o, scene) {
+  o.innihald.userData.fjarlaegdur = true;
+  scene.remove(o.group, o.holo, o.puls, o.slod, o.merki);
+  losa(o.group, o.holo, o.puls, o.slod);
+  o.gloi.dispose();
+}
 
 /** Röntgen: raunverulegt yfirborð hverfur og eftir standa útlínur + glói; hólógrömm skipta um lit. */
 export function setjaXray(o, kveikt) {
   o.xray = kveikt;
+  o.innihald.userData.xray = kveikt;
   o.innihald.traverse((m) => {
     if (!m.material || m.userData.xrayLina) return;
     const efni = Array.isArray(m.material) ? m.material : [m.material];
