@@ -1,0 +1,10 @@
+- generic [active] [ref=e1]:
+  - generic "Þrívíð hólógramasena" [ref=e2]
+  - generic [ref=e3]:
+    - heading "Hólógram-vinnustöð" [level=1] [ref=e4]
+    - status [ref=e5]: Ræsi kerfi…
+    - paragraph [ref=e6]: Engin hönd
+    - group [ref=e7]:
+      - generic "Stjórnun og bendingar" [ref=e8] [cursor=pointer]
+    - paragraph [ref=e9]: 26 fps · rakning 0 ms · 0 hendur · 0 hlutir
+    - button "Endurstilla" [ref=e10] [cursor=pointer]

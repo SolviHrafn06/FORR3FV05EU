@@ -35,6 +35,7 @@ export class Agnir {
       depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
     }));
     this.points.frustumCulled = false;
+    this.points.visible = false;
     scene.add(this.points);
   }
 
@@ -86,5 +87,6 @@ export class Agnir {
       this.points.geometry.attributes.color.needsUpdate = true;
     }
     this.vorLifandi = lifandi;
+    this.points.visible = lifandi;
   }
 }

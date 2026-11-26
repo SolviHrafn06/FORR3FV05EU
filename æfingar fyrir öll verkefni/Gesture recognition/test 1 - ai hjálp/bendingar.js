@@ -17,7 +17,7 @@ export class BendingaHald {
 
   /** Skilar { nafn, framvinda 0..1, skipun } þar sem skipun kemur einu sinni þegar haldið er nógu lengi. */
   update(nafn, vissa, t) {
-    const raun = vissa >= this.lagmark && nafn in SKIPANIR ? nafn : null;
+    const raun = vissa >= this.lagmark && Object.hasOwn(SKIPANIR, nafn) ? nafn : null;
     let n = raun;
     if (!raun && this.nafn && t - this.sidast < BROTTFALL) n = this.nafn;
     if (raun) this.sidast = t;

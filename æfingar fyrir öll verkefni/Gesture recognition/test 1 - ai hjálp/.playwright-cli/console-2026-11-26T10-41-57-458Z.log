@@ -1,0 +1,8 @@
+[     311ms] [ERROR] NotFoundError: Test: no camera @ http://localhost:5500/%C3%A6fingar%20fyrir%20%C3%B6ll%20verkefni/Gesture%20recognition/test%201%20-%20ai%20hj%C3%A1lp/script.js:995
+[   10278ms] [ERROR] Error: Uncaught Error: fixture tracking failure
+    at w.onerror (http://localhost:5500/%C3%A6fingar%20fyrir%20%C3%B6ll%20verkefni/Gesture%20recognition/test%201%20-%20ai%20hj%C3%A1lp/script.js:950:30) @ http://localhost:5500/%C3%A6fingar%20fyrir%20%C3%B6ll%20verkefni/Gesture%20recognition/test%201%20-%20ai%20hj%C3%A1lp/script.js:438
+[   12373ms] [ERROR] Error: Uncaught Error: fixture startup failure
+    at w.onerror (http://localhost:5500/%C3%A6fingar%20fyrir%20%C3%B6ll%20verkefni/Gesture%20recognition/test%201%20-%20ai%20hj%C3%A1lp/script.js:950:30) @ http://localhost:5500/%C3%A6fingar%20fyrir%20%C3%B6ll%20verkefni/Gesture%20recognition/test%201%20-%20ai%20hj%C3%A1lp/script.js:438
+[   16182ms] [ERROR] Error: greining svaraði ekki
+    at http://localhost:5500/%C3%A6fingar%20fyrir%20%C3%B6ll%20verkefni/Gesture%20recognition/test%201%20-%20ai%20hj%C3%A1lp/script.js:457:47 @ http://localhost:5500/%C3%A6fingar%20fyrir%20%C3%B6ll%20verkefni/Gesture%20recognition/test%201%20-%20ai%20hj%C3%A1lp/script.js:438
+[   16814ms] [WARNING] WebGL: INVALID_VALUE: texImage2D: no video @ https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js:10544

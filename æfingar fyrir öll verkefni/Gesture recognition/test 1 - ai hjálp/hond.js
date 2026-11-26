@@ -1,7 +1,7 @@
 // Hrein handarökfræði (engin three.js / DOM) svo hægt sé að prófa hana í node.
 // Landmarks eru MediaPipe-punktar: { x, y, z } þar sem x,y eru 0..1 í myndinni.
 
-export const UL = 0, THUMB_TIP = 4, INDEX_MCP = 5, INDEX_PIP = 6, INDEX_TIP = 8,
+export const UL = 0, THUMB_MCP = 2, THUMB_TIP = 4, INDEX_MCP = 5, INDEX_PIP = 6, INDEX_TIP = 8,
   MIDDLE_MCP = 9, MIDDLE_PIP = 10, MIDDLE_TIP = 12, RING_MCP = 13, RING_PIP = 14,
   RING_TIP = 16, PINKY_MCP = 17, PINKY_PIP = 18, PINKY_TIP = 20;
 
@@ -33,6 +33,29 @@ export function krull(lm, aspect = 1) {
   return FINGUR.map(([tip, , mcp]) => fjarlaegd3(lm[tip], lm[UL], aspect) / Math.max(fjarlaegd3(lm[mcp], lm[UL], aspect), 1e-6));
 }
 
+/**
+ * Bending út frá 21 liðum (HandLandmarker), sömu nöfn og GestureRecognizer skilaði.
+ * Fingur er beinn ef krull > 1.55, krepptur ef < 1.3; þar á milli er óvíst og skilar 'None'.
+ * y vísar niður bæði í mynd- og heimshnitum MediaPipe.
+ */
+export function flokkaBendingu(lm, aspect = 1) {
+  const k = krull(lm, aspect);
+  const beinn = k.map((v) => v > 1.55), kreppt = k.map((v) => v < 1.3);
+  const er = (...m) => m.every((s, i) => (s === 1 ? beinn[i] : kreppt[i]));
+  const thumallUti = fjarlaegd3(lm[THUMB_TIP], lm[INDEX_MCP], aspect) / Math.max(handStaerd(lm, aspect), 1e-6) > 0.65;
+  // lóðréttur hluti stefnu þumals / vísifingurs (-1 = beint upp)
+  const upp = (tip, rot) => (lm[tip].y - lm[rot].y) / Math.max(fjarlaegd3(lm[tip], lm[rot], aspect), 1e-6);
+  let nafn = 'None';
+  if (er(0, 0, 0, 0)) nafn = !thumallUti ? 'Closed_Fist' : upp(THUMB_TIP, THUMB_MCP) < -0.6 ? 'Thumb_Up' : upp(THUMB_TIP, THUMB_MCP) > 0.6 ? 'Thumb_Down' : 'None';
+  // ☝️ þarf þumal lagðan á miðfingur; laus þumall með sömu fingrum er zoom-staðan (HandStada), ekki bending
+  else if (er(1, 0, 0, 0)) nafn = fjarlaegd3(lm[THUMB_TIP], lm[MIDDLE_PIP], aspect) / Math.max(handStaerd(lm, aspect), 1e-6) < 0.3
+    && upp(INDEX_TIP, INDEX_MCP) < -0.5 ? 'Pointing_Up' : 'None';
+  else if (er(1, 1, 0, 0)) nafn = 'Victory';
+  else if (er(1, 0, 0, 1)) nafn = thumallUti ? 'ILoveYou' : 'None';
+  else if (er(1, 1, 1, 1)) nafn = 'Open_Palm';
+  return { categoryName: nafn, score: nafn === 'None' ? 0 : 1 };
+}
+
 /** Hnefi: vísifingur krepptur og a.m.k. 3 af 4 fingrum. */
 export function erHnefi(lm, aspect = 1) {
   const k = krepptir(lm, aspect);
@@ -48,6 +71,13 @@ export function erZoomStada(lm, aspect = 1) {
 /** Klípuhlutfall: fjarlægð þumals og vísifingurs deilt með handarstærð (óháð fjarlægð frá myndavél). */
 export function klipuHlutfall(lm, aspect = 1) {
   return fjarlaegd3(lm[THUMB_TIP], lm[INDEX_TIP], aspect) / Math.max(handStaerd(lm, aspect), 1e-6);
+}
+
+const GOMAR = [THUMB_TIP, INDEX_TIP, MIDDLE_TIP, RING_TIP, PINKY_TIP];
+/** Útbreiðsla fingurgóma: meðalfjarlægð allra 5 góma frá miðju þeirra / handarstærð. Saman ~0.1, glenntir ~0.6. */
+export function utbreidsla(lm, aspect = 1) {
+  const m = midja(lm, GOMAR);
+  return GOMAR.reduce((s, i) => s + fjarlaegd3(lm[i], m, aspect), 0) / GOMAR.length / Math.max(handStaerd(lm, aspect), 1e-6);
 }
 
 export function midja(lm, idx) {
@@ -83,7 +113,7 @@ const alfa = (cutoff, dt) => { const r = 2 * Math.PI * cutoff * dt; return r / (
  * hröð hreyfing = nánast engin töf. Staðallinn í handarakningu.
  */
 export class Mykir {
-  constructor(minCutoff = 1.5, beta = 10, dCutoff = 1) {
+  constructor(minCutoff = 3.5, beta = 20, dCutoff = 1) {
     Object.assign(this, { minCutoff, beta, dCutoff, x: null, dx: null, t: 0 });
   }
   update(lm, t) {
@@ -114,17 +144,28 @@ export class Sia1D {
 }
 
 /**
- * Parar nýjar greiningar við fyrri hendur eftir staðsetningu lófa (nánasta par fyrst).
+ * Parar nýjar greiningar við fyrri hendur eftir staðsetningu lófa (besta heildarpörun).
  * MediaPipe merkir sömu höndina stundum "Left" og stundum "Right", svo merkið er ekki notað sem auðkenni.
  * Skilar fyrir hverja greiningu index fyrri handar, eða -1 ef þetta er ný hönd.
  */
 export function paraSpor(fyrri, nyir, hamark = 0.35) {
-  const por = [];
-  fyrri.forEach((a, i) => nyir.forEach((b, j) => por.push([Math.hypot(a.x - b.x, a.y - b.y), i, j])));
-  por.sort((p, q) => p[0] - q[0]);
-  const ut = nyir.map(() => -1), notud = new Set();
-  for (const [d, i, j] of por) if (d < hamark && ut[j] === -1 && !notud.has(i)) { ut[j] = i; notud.add(i); }
-  return ut;
+  let best = nyir.map(() => -1), flest = -1, styst = Infinity;
+  const por = nyir.map(() => -1), notud = new Set();
+  // Líkaninu er takmarkað við tvær hendur; prófum bæði pör í stað gráðugrar pörunar sem tapar auðkenni.
+  function profa(j, fjoldi, lengd) {
+    if (j === nyir.length) {
+      if (fjoldi > flest || (fjoldi === flest && lengd < styst)) { best = [...por]; flest = fjoldi; styst = lengd; }
+      return;
+    }
+    for (let i = 0; i < fyrri.length; i++) {
+      const d = Math.hypot(fyrri[i].x - nyir[j].x, fyrri[i].y - nyir[j].y);
+      if (notud.has(i) || d >= hamark) continue;
+      por[j] = i; notud.add(i); profa(j + 1, fjoldi + 1, lengd + d); notud.delete(i);
+    }
+    por[j] = -1; profa(j + 1, fjoldi, lengd);
+  }
+  profa(0, 0, 0);
+  return best;
 }
 
 /**
@@ -132,37 +173,46 @@ export function paraSpor(fyrri, nyir, hamark = 0.35) {
  * lokast undir 1.3, opnast yfir 1.55; hálfkreppt "kló" heldur núverandi stöðu svo gripið rofni ekki.
  */
 export class HandStada {
-  constructor() { this.hnefi = false; this.zoom = false; this.klipa = false; this.h = 0; this.z = 0; }
-  update(lm, bending = null, vissa = 0, aspect = 1) {
+  constructor() { this.hnefi = false; this.zoom = false; this.klipa = false; this.thensla = false; this.h = 0; this.z = 0; this.u = 0; this.t = 0; }
+  update(lm, bending = null, vissa = 0, aspect = 1, t = this.t + 1000 / 30) {
+    const dt = Math.min(100, Math.max(0, t - this.t));
+    if (t - this.t > 250) this.h = this.z = this.u = 0;
+    this.t = t;
     const k = krull(lm, aspect);
     const medal = (k[0] + k[1] + k[2] + k[3]) / 4;
     // 👍/👎 eru krepptar hendur með þumal út: þær eru skipanir, ekki grip
     const thumallUti = fjarlaegd3(lm[THUMB_TIP], lm[INDEX_MCP], aspect) / Math.max(handStaerd(lm, aspect), 1e-6) > 0.65;
     const thumalBending = (bending === 'Thumb_Up' || bending === 'Thumb_Down') && vissa >= 0.6;
     // í zoom-stöðu líkist þumall við vísifingur hnefa: þá þarf fulla kreppu til að grípa
-    const lokud = thumallUti || thumalBending ? false : this.zoom
+    const lokud = thumallUti || thumalBending || this.thensla ? false : this.zoom
       ? medal < 1.15 && k[0] < 1.1
       // merki líkansins má hjálpa hálfkrepptri hönd, en aldrei yfirtrompa greinilega opna fingur
       : (medal < 1.3 && k[0] < 1.4) || (bending === 'Closed_Fist' && vissa >= 0.7 && medal < 1.45);
     // opnun ræðst eingöngu af fingrunum: rangt "Closed_Fist" frá líkaninu má ekki festa gripið
     const opin = medal > 1.55 || k[0] > 1.6;
-    this.h = (this.hnefi ? opin : lokud) ? this.h + 1 : 0;
-    // 2 rammar til að grípa, 3 til að sleppa: hreyfiþoka í einum ramma sleppir ekki
-    if (this.h >= (this.hnefi ? 3 : 2)) { this.hnefi = !this.hnefi; this.h = 0; }
+    this.h = (this.hnefi ? opin : lokud) ? (this.h ? this.h + dt : 1000 / 30) : 0;
+    // Tími í stað rammafjölda: hæg greining lengir ekki staðfestingu; einn rammi nægir aldrei.
+    if (this.h >= (this.hnefi ? 100 : 2000 / 30) - 1e-6) { this.hnefi = !this.hnefi; this.h = 0; }
 
     // zoom: til að byrja þarf beinan vísifingur; eftir það má hann bogna (klípa) svo lengi sem hinir eru krepptir
     const kr = krepptir(lm, aspect);
     // ☝️ (Pointing_Up) hefur sömu fingur og zoom en þumalinn inni: það er leysirinn, ekki zoom
     const bendir = bending === 'Pointing_Up' && vissa >= 0.5;
     const zNu = !this.hnefi && kr[1] && kr[2] && kr[3] && (this.zoom || (!kr[0] && !bendir));
-    this.z = zNu ? Math.max(1, this.z + 1) : Math.min(-1, this.z - 1);
-    if (!this.zoom && this.z >= 5) this.zoom = true;
-    if (this.zoom && (this.z <= -4 || this.hnefi)) this.zoom = false;
+    this.z = zNu ? (this.z > 0 ? this.z + dt : 1000 / 30) : (this.z < 0 ? this.z - dt : -1000 / 30);
+    if (!this.zoom && this.z >= 5000 / 30 - 1e-6) this.zoom = true;
+    if (this.zoom && (this.z <= -4000 / 30 + 1e-6 || this.hnefi)) this.zoom = false;
 
     const kl = klipuHlutfall(lm, aspect);
     if (this.hnefi) this.klipa = false;
     else if (!this.klipa && kl < 0.33) this.klipa = true;
     else if (this.klipa && kl > 0.48) this.klipa = false;
-    return { hnefi: this.hnefi, zoom: this.zoom, klipa: this.klipa, klipuHlutfall: kl, krull: medal };
+    // útþensla: allir gómar saman (fingur beinir, ekki hnefi) í 3 ramma byrjar; lýkur við fulla opnun eða kreppu
+    const ub = utbreidsla(lm, aspect);
+    if (!this.thensla) {
+      this.u = !this.hnefi && medal > 1.25 && ub < 0.2 ? (this.u ? this.u + dt : 1000 / 30) : 0;
+      if (this.u >= 100 - 1e-6) { this.thensla = true; this.u = 0; }
+    } else if (this.hnefi || this.zoom || medal < 1.15 || ub > 0.6) this.thensla = false;
+    return { hnefi: this.hnefi, zoom: this.zoom, klipa: this.klipa, thensla: this.thensla, utbreidsla: ub, klipuHlutfall: kl, krull: medal };
   }
 }
