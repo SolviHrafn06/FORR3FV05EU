@@ -1,0 +1,3 @@
+Original game mesh vertex coordinates and skin weights preserved. No sculpted re-pose or bind-pose baking.
+Idle edge ratios [1%, median, 99%] at three sampled phases:
+[[0.9906646005775187, 1.0, 1.0065051011621418], [0.9989493091316405, 1.0, 1.0010540619194601], [0.9938058249661594, 1.0, 1.0103100344857734]]

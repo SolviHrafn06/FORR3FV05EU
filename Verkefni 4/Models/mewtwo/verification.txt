@@ -1,0 +1,6 @@
+glTF Validator: 0 errors, 0 warnings.
+Both animation clips reimported into Blender and checked for visible mesh deformation.
+Animation durations verified: Attack_Physical 1.6 s; Attack_Ranged 2.4 s.
+All skin vertices have normalized weights. Start/end poses match. Sampled poses are finite and bounded.
+Original source files and textures match the supplied files by SHA-256.
+Rendered previews inspected. No target game engine tested.

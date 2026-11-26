@@ -1,0 +1,6 @@
+GLB Validator: zero errors and warnings.
+GLB reimported into Blender and both clips checked for motion and matching start/end poses.
+Original game mesh vertex coordinates and original weights preserved; no aggressive reposing or mesh baking.
+Idle sampled edge-length ratios: 1st to 99th percentile within approximately 0.99 to 1.01 of the original mesh.
+Original source files verified unchanged with SHA-256.
+No target game engine tested.
