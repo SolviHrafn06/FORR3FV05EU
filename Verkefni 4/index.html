@@ -1,1 +1,36 @@
-<!doctype html><title>probe</title>
+<!doctype html>
+<html lang="is">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AR Pokémon bardagi</title>
+  <link rel="stylesheet" href="./style.css">
+  <!-- three verður að vera 0.160.0: mind-ar 1.2.5 flytur inn sRGBEncoding sem var fjarlægt í r162 -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+        "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js",
+        "mindar-image": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js",
+        "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14"
+      }
+    }
+  </script>
+  <script type="module" src="./main.js"></script>
+</head>
+<body>
+  <div id="ar"></div>
+  <canvas id="hendur"></canvas>
+  <div id="merki"></div>
+
+  <p id="stada" role="status">Ræsi…</p>
+  <a id="vista" hidden download="targets.mind">Vista targets.mind</a>
+
+  <ul id="skyring" aria-label="Bendingar">
+    <li>✊ Árás</li>
+    <li>✌️ Ofurárás</li>
+    <li>👍 Ný umferð</li>
+  </ul>
+</body>
+</html>

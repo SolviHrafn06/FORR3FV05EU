@@ -1,0 +1,117 @@
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+}
+
+/* MindAR setur myndavélina og three-strigann inn í #ar */
+#ar {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Staðsetning og stærð eru stillt í main.js svo hendurnar passi við myndbandið */
+#hendur {
+  position: fixed;
+  pointer-events: none;
+  z-index: 2;
+}
+
+#merki {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.merki {
+  position: absolute;
+  min-width: 7rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.5rem;
+  background: rgb(0 0 0 / 0.65);
+  font-size: 0.85rem;
+  text-align: center;
+  transform: translate(-50%, -100%);
+}
+
+.merki .hp {
+  height: 0.4rem;
+  margin-top: 0.25rem;
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 0.25);
+  overflow: hidden;
+}
+
+.merki .hp span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #3ecf5a;
+  transition: width 0.3s;
+}
+
+.merki.lagt .hp span { background: #e5484d; }
+.merki.rotad { opacity: 0.6; }
+
+#stada {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  margin: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  background: rgb(0 0 0 / 0.7);
+  text-align: center;
+}
+
+#vista {
+  position: fixed;
+  top: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  padding: 0.4rem 0.9rem;
+  border-radius: 2rem;
+  background: #ffcb05;
+  color: #000;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+#vista[hidden] { display: none; }
+
+#skyring {
+  position: fixed;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#skyring li {
+  padding: 0.4rem 0.7rem;
+  border-radius: 2rem;
+  background: rgb(0 0 0 / 0.7);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .merki .hp span { transition: none; }
+}
