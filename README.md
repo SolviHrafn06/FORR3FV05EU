@@ -20,7 +20,7 @@ Opnaðu viðeigandi verkefnamöppu og fylgdu þeim leiðbeiningum sem fylgja ver
 
 ## Hlekkir
 
-
+- [AR æfing](./æfingar%20fyrir%20öll%20verkefni/Gesture%20recognition/test%201%20-%20ai%20hjálp/index.html)
 - [æfingar leikur (Star Wars)](./æfingar%20fyrir%20öll%20verkefni/æfingar%20leikur/index.html)
 - [æfing web animations](./æfingar%20fyrir%20öll%20verkefni/Web%20animation%20API%20æfingar/index.html)
 - [swipe æfing](./æfingar%20fyrir%20öll%20verkefni/Touch%20Events/index.html)
